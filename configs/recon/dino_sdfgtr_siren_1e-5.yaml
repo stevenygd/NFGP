@@ -1,0 +1,66 @@
+data:
+  type: datasets.single_shape_sdf_datasets
+  num_workers: 4
+  path: data/arap_dino/dino.npy
+  tr_max_sample_points: 2048
+  te_max_sample_points: 2048
+  train:
+    length: 10000
+    batch_size: 1
+    num_sample_points: 10000
+  val:
+    length: 50
+    batch_size: 10
+    num_sample_points: 10000
+
+viz:
+  log_freq: 10
+  viz_freq: 10000
+  save_freq: 1
+  val_freq: 1
+
+trainer:
+  type: trainers.ae_ndf_trainer_3D
+  epochs: 10
+  seed: 100
+  ndf_loss_weight: 0.
+  sdf_loss_weight: 1.
+  grad_norm_weight: 1e-2
+  grad_norm_num_points: 0
+  opt_dec:
+    type: 'adam'
+    lr: 1e-5
+    beta1: 0.9
+    beta2: 0.999
+    momentum: 0.9  # for SGD
+    weight_decay: 0.
+    scheduler: linear
+    step_epoch: 200
+  opt_enc:
+    type: 'adam'
+    lr: 1e-5
+    beta1: 0.9
+    beta2: 0.999
+    momentum: 0.9  # for SGD
+    weight_decay: 0.
+    scheduler: linear
+    step_epoch: 200 
+
+models:
+  decoder:
+    type: models.decoders.siren_mlp
+    dim: 3
+    out_dim: 1
+    hidden_size: 512
+    n_blocks: 5
+    z_dim: 1
+  encoder:
+    type: models.encoders.constant_encoder
+    use_deterministic_encoder: True
+    zdim: 1
+
+inference:
+  step_size_ratio: 1
+  num_steps: 10
+  num_points: 2048
+  weight: 1

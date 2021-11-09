@@ -1,0 +1,89 @@
+data:
+  type: datasets.deform_handles_datasets
+  num_workers: 4
+  path: data/cylinder/deform_translate.npy
+  train:
+    length: 100
+    batch_size: 1
+  val:
+    length: 50
+    batch_size: 10
+
+viz:
+  log_freq: 1
+  viz_freq: 100
+  save_freq: 10
+  val_freq: 10
+
+trainer:
+  type: trainers.implicit_deform_3D
+  epochs: 1000
+  seed: 100
+  wrapper_type: 'deformation'
+  show_network_hist: False
+  sample_cfg:
+    num_points: 5000
+    detach_weight: False
+    use_rejection: True
+    use_square: True
+  # Loss configurations
+  loss_h_weight: 100.
+  loss_h_thr: 1e-4
+  loss_g:
+    weight: 0.
+    num_points: 0
+  loss_km:
+    weight: 0.
+    num_points: 0
+  loss_stretch:
+    weight: 1e-1
+    num_points: 5000
+    invert_sample: True
+    use_weight: True
+    use_surf_points: True
+    loss_type: simple
+    detach_weight: False
+    use_rejection: True
+    use_square: True
+  loss_hess:
+    weight: 1e-3
+    num_points: 5000
+    invert_sample: True
+    use_weight: True
+    use_surf_points: True
+    hess_type: direct
+    use_bending: True
+    detach_weight: False
+    use_rejection: True
+    use_square: True
+  # Optimization configurations
+  opt_deform:
+    type: 'adam'
+    lr: 1e-4
+    beta1: 0.9
+    beta2: 0.999
+    momentum: 0.9  # for SGD
+    weight_decay: 0.
+
+models:
+  decoder:
+    path: pretrained/Cylinder_sdfgtr_siren_1e-5_2021-May-02-20-08-44/checkpoints/epoch_9_iters_100000.pt
+    type: models.decoders.siren_mlp
+    dim: 3
+    out_dim: 1
+    hidden_size: 512
+    n_blocks: 5
+    z_dim: 1
+  deform_wrapper:
+    delta_x_add: False
+  deform_decoder:
+    type: models.decoders.invert_res_relu_mlp
+    dim: 3
+    out_dim: 3
+    hidden_size: 256
+    n_blocks: 6
+    relu_scale: 1
+    nonlin: elu
+    pos_enc_freq: 5
+    use_scale_bias: False # slow training, numerical issues :)
+    use_scale_layer: False  # useless
