@@ -26,6 +26,7 @@ Experimental results show that our methods are on par with the well-established 
 
 This repository provides a [Anaconda](https://www.anaconda.com/) environment, and requires NVIDIA GPU to run the
  optimization routine. 
+The code is tested in [CUDA 10.2](), ubuntu 16.04.
 The environment can be set-up using the following commands:
 ```bash
 conda env create -f environment.yml

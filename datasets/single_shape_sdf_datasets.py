@@ -17,9 +17,6 @@ class SingleShape(Dataset):
         self.points = self.data['points']
         self.sdf = self.data['sdf']
         self.dim = getattr(self.cfg, "dim", 3)
-
-        self.tr_max_sample_points = cfg.tr_max_sample_points
-        self.te_max_sample_points = cfg.te_max_sample_points
         self.length = int(cfgdata.length)
 
         # Default display axis order
@@ -29,10 +26,6 @@ class SingleShape(Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        tr_out = torch.from_numpy(self.mesh.sample(
-            self.tr_max_sample_points)).float()
-        te_out = torch.from_numpy(self.mesh.sample(
-            self.te_max_sample_points)).float()
         m = torch.zeros(1, 3).float()
         s = torch.ones(1, 3).float()
 
@@ -48,8 +41,6 @@ class SingleShape(Dataset):
 
         return {
             'idx': idx,
-            'tr_points': tr_out,
-            'te_points': te_out,
             'xyz': xyz,
             'dist': dist,
             'sign': sign,

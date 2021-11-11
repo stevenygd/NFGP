@@ -67,7 +67,7 @@ class Decoder(nn.Module):
             torch.nn.init.constant_(self.blocks[-1].bias, 0)
 
     # This should have the same signature as the sig condition one
-    def forward(self, x, _):
+    def forward(self, x):
         """
         :param x: (bs, npoints, self.dim) Input coordinate (xyz)
         :param c: (bs, self.zdim + 1) Shape latent code + sigma

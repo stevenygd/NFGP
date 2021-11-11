@@ -1,21 +1,11 @@
 import os
-import tqdm
 import torch
 import importlib
-import numpy as np
 import torch.nn.functional as F
 from trainers.utils.diff_ops import gradient
 from trainers.utils.vis_utils import imf2mesh
 from trainers.base_trainer import BaseTrainer
 from trainers.utils.utils import get_opt, set_random_seed
-
-
-try:
-    from evaluation.evaluation_metrics import EMD_CD
-    eval_reconstruciton = True
-except:  # noqa
-    # Skip evaluation
-    eval_reconstruciton = False
 
 
 class Trainer(BaseTrainer):
@@ -27,36 +17,20 @@ class Trainer(BaseTrainer):
         set_random_seed(getattr(self.cfg.trainer, "seed", 666))
 
         # The networks
-        sn_lib = importlib.import_module(cfg.models.decoder.type)
-        self.decoder = sn_lib.Decoder(cfg, cfg.models.decoder)
-        self.decoder.cuda()
-        print("Decoder:")
-        print(self.decoder)
-
-        encoder_lib = importlib.import_module(cfg.models.encoder.type)
-        self.encoder = encoder_lib.Encoder(cfg.models.encoder)
-        self.encoder.cuda()
-        print("Encoder:")
-        print(self.encoder)
+        lib = importlib.import_module(cfg.models.decoder.type)
+        self.net = lib.Decoder(cfg, cfg.models.decoder)
+        self.net.cuda()
+        print("Net:")
+        print(self.net)
 
         # The optimizer
-        if not (hasattr(self.cfg.trainer, "opt_enc") and
-                hasattr(self.cfg.trainer, "opt_dec")):
-            self.cfg.trainer.opt_enc = self.cfg.trainer.opt
-            self.cfg.trainer.opt_dec = self.cfg.trainer.opt
-
-        self.opt_enc, self.scheduler_enc = get_opt(
-            self.encoder.parameters(), self.cfg.trainer.opt_enc)
-        self.opt_dec, self.scheduler_dec = get_opt(
-            self.decoder.parameters(), self.cfg.trainer.opt_dec)
+        self.opt, self.sch = get_opt(
+            self.net.parameters(), self.cfg.trainer.opt)
 
         # Prepare save directory
+        os.makedirs(os.path.join(cfg.save_dir, "val"), exist_ok=True)
         os.makedirs(os.path.join(cfg.save_dir, "images"), exist_ok=True)
         os.makedirs(os.path.join(cfg.save_dir, "checkpoints"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "val"), exist_ok=True)
-
-        # Prepare variable for summy
-        self.oracle_res = None
 
     def update(self, data, *args, **kwargs):
         if 'no_update' in kwargs:
@@ -64,19 +38,12 @@ class Trainer(BaseTrainer):
         else:
             no_update = False
         if not no_update:
-            self.encoder.train()
-            self.decoder.train()
-            self.opt_enc.zero_grad()
-            self.opt_dec.zero_grad()
+            self.net.train()
+            self.opt.zero_grad()
 
-        tr_pts = data['tr_points'].cuda()  # (B, #points, 3)smn_ae_trainer.py
-        z_mu, z_sigma = self.encoder(tr_pts)
-        z = z_mu + 0 * z_sigma
-
-        bs = z.size(0)
         xyz, dist = data['xyz'].cuda(), data['dist'].cuda()
-        xyz = xyz.view(bs, -1, xyz.size(-1))
-        out = self.decoder(xyz, z)
+        bs = xyz.size(0)
+        out = self.net(xyz)
         ndf_loss_weight = float(getattr(
             self.cfg.trainer, "ndf_loss_weight", 1.))
         if ndf_loss_weight > 0:
@@ -114,7 +81,7 @@ class Trainer(BaseTrainer):
                 bs, grad_norm_num_points, xyz.size(-1)).to(xyz) * 2 - 1
             xyz = xyz.cuda()
             xyz.requires_grad = True
-            grad_norm = gradient(self.decoder(xyz, z), xyz).view(
+            grad_norm = gradient(self.net(xyz), xyz).view(
                 bs, -1, xyz.size(-1)).norm(dim=-1)
             loss_unit_grad_norm = F.mse_loss(
                 grad_norm, torch.ones_like(grad_norm)) * grad_norm_weight
@@ -124,15 +91,15 @@ class Trainer(BaseTrainer):
 
         if not no_update:
             loss.backward()
-            self.opt_enc.step()
-            self.opt_dec.step()
+            self.opt.step()
 
         return {
             'loss': loss.detach().cpu().item(),
-            'loss_y_ndf': loss_y_ndf.detach().cpu().item(),
-            'loss_y_sdf': loss_y_sdf.detach().cpu().item(),
-            'loss_occ': loss_occ.detach().cpu().item(),
-            'loss_grad_norm': loss_unit_grad_norm.detach().cpu().item(),
+            'scalar/loss': loss.detach().cpu().item(),
+            'scalar/loss_y_ndf': loss_y_ndf.detach().cpu().item(),
+            'scalar/loss_y_sdf': loss_y_sdf.detach().cpu().item(),
+            'scalar/loss_occ': loss_occ.detach().cpu().item(),
+            'scalar/loss_grad_norm': loss_unit_grad_norm.detach().cpu().item(),
         }
 
     def log_train(self, train_info, train_data, writer=None,
@@ -141,26 +108,23 @@ class Trainer(BaseTrainer):
             return
 
         # Log training information to tensorboard
-        train_info = {k: (v.cpu() if not isinstance(v, float) else v)
-                      for k, v in train_info.items()}
+        writer_step = step if step is not None else epoch
+        assert writer_step is not None
         for k, v in train_info.items():
-            if not ('loss' in k):
+            t, kn = k.split("/")[0], "/".join(k.split("/")[1:])
+            if t not in ['scalar']:
                 continue
-            if step is not None:
-                writer.add_scalar('train/' + k, v, step)
-            else:
-                assert epoch is not None
-                writer.add_scalar('train/' + k, v, epoch)
+            if t == 'scalar':
+                writer.add_scalar('train/' + kn, v, writer_step)
 
         if visualize:
             with torch.no_grad():
                 print("Visualize: %s" % step)
-                # TODO: use marching cube to save the meshes
                 res = int(getattr(self.cfg.trainer, "vis_mc_res", 256))
                 thr = float(getattr(self.cfg.trainer, "vis_mc_thr", 0.))
 
                 mesh = imf2mesh(
-                    lambda x: self.decoder(x, None), res=res, threshold=thr)
+                    lambda x: self.net(x, None), res=res, threshold=thr)
                 if mesh is not None:
                     save_name = "mesh_%diters.obj" \
                                 % (step if step is not None else epoch)
@@ -168,15 +132,12 @@ class Trainer(BaseTrainer):
                     mesh.export(path)
 
     def validate(self, test_loader, epoch, *args, **kwargs):
-        if not eval_reconstruciton:
-            return {}
+        return {}
 
     def save(self, epoch=None, step=None, appendix=None, **kwargs):
         d = {
-            'opt_enc': self.opt_enc.state_dict(),
-            'opt_dec': self.opt_dec.state_dict(),
-            'dec': self.decoder.state_dict(),
-            'enc': self.encoder.state_dict(),
+            'opt': self.opt.state_dict(),
+            'net': self.net.state_dict(),
             'epoch': epoch,
             'step': step
         }
@@ -188,26 +149,17 @@ class Trainer(BaseTrainer):
 
     def resume(self, path, strict=True, **kwargs):
         ckpt = torch.load(path)
-        self.encoder.load_state_dict(ckpt['enc'], strict=strict)
-        self.decoder.load_state_dict(ckpt['dec'], strict=strict)
-        self.opt_enc.load_state_dict(ckpt['opt_enc'])
-        self.opt_dec.load_state_dict(ckpt['opt_dec'])
+        self.net.load_state_dict(ckpt['net'], strict=strict)
+        self.opt.load_state_dict(ckpt['opt'])
         start_epoch = ckpt['epoch']
         return start_epoch
 
     def multi_gpu_wrapper(self, wrapper):
-        self.encoder = wrapper(self.encoder)
-        self.decoder = wrapper(self.decoder)
+        self.net = wrapper(self.net)
 
     def epoch_end(self, epoch, writer=None, **kwargs):
-        if self.scheduler_dec is not None:
-            self.scheduler_dec.step(epoch=epoch)
+        if self.sch is not None:
+            self.sch.step(epoch=epoch)
             if writer is not None:
                 writer.add_scalar(
-                    'train/opt_dec_lr', self.scheduler_dec.get_lr()[0], epoch)
-        if self.scheduler_enc is not None:
-            self.scheduler_enc.step(epoch=epoch)
-            if writer is not None:
-                writer.add_scalar(
-                    'train/opt_enc_lr', self.scheduler_enc.get_lr()[0], epoch)
-
+                    'train/opt_lr', self.sch.get_lr()[0], epoch)
