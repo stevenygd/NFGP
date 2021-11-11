@@ -40,7 +40,6 @@ def laplace(y, x, normalize=False, eps=0., return_grad=False):
     return div
 
 
-
 def divergence(y, x):
     div = 0.
     for i in range(y.shape[-1]):
