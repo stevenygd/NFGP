@@ -124,7 +124,7 @@ class Trainer(BaseTrainer):
                 thr = float(getattr(self.cfg.trainer, "vis_mc_thr", 0.))
 
                 mesh = imf2mesh(
-                    lambda x: self.net(x, None), res=res, threshold=thr)
+                    lambda x: self.net(x), res=res, threshold=thr)
                 if mesh is not None:
                     save_name = "mesh_%diters.obj" \
                                 % (step if step is not None else epoch)
