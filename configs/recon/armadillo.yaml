@@ -18,7 +18,7 @@ viz:
   val_freq: 1
 
 trainer:
-  type: trainers.ae_sdf_trainer_3D
+  type: trainers.nf_sdf_trainer_3D
   epochs: 300
   seed: 100
   ndf_loss_weight: 0.

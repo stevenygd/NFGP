@@ -1,7 +1,7 @@
 data:
   type: datasets.single_shape_sdf_datasets
   num_workers: 4
-  path: data/bar/sdf.npy
+  path: data/noisy_torus/sdf.npy
   train:
     length: 10000
     batch_size: 1
@@ -38,5 +38,5 @@ models:
     dim: 3
     out_dim: 1
     hidden_size: 512
-    n_blocks: 2
+    n_blocks: 5
     z_dim: 1

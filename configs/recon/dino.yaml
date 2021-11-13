@@ -7,8 +7,8 @@ data:
     batch_size: 1
     num_sample_points: 10000
   val:
-    length: 50
-    batch_size: 10
+    length: 1
+    batch_size: 1
     num_sample_points: 10000
 
 viz:
@@ -18,7 +18,7 @@ viz:
   val_freq: 1
 
 trainer:
-  type: trainers.ae_sdf_trainer_3D
+  type: trainers.nf_sdf_trainer_3D
   epochs: 100
   seed: 100
   ndf_loss_weight: 0.
@@ -30,7 +30,6 @@ trainer:
     lr: 1e-5
     beta1: 0.9
     beta2: 0.999
-    momentum: 0.9  # for SGD
     weight_decay: 0.
 
 models:
