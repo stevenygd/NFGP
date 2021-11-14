@@ -1,27 +1,14 @@
 import torch
-import numpy as np
-from trainers.utils.diff_ops import gradient, jacobian, laplace, hessian
-from scipy.optimize import linear_sum_assignment
-
-
-def CD(x, y):
-    dim = x.shape[-1]
-    x = x.reshape(-1, 1, dim)
-    y = y.reshape(1, -1, dim)
-    d = np.linalg.norm(x - y, axis=-1)
-    return 0.5 * (d.min(axis=0).mean() + d.min(axis=1).mean())
-
-
-def EMD(x, y):
-    dim = x.shape[-1]
-    x = x.reshape(-1, 1, dim)
-    y = y.reshape(1, -1, dim)
-    d = np.linalg.norm(x - y, axis=-1)
-    r_idx, c_idx = linear_sum_assignment(d)
-    return d[r_idx, c_idx].mean()
+from trainers.utils.diff_ops import gradient, jacobian
 
 
 def outter(v1, v2):
+    """
+    Batched outter product of two vectors: [v1] [v2]^T
+    :param v1: (bs, dim)
+    :param v2: (bs, dim)
+    :return: (bs, dim, dim)
+    """
     bs = v1.size(0)
     d = v1.size(1)
     v1 = v1.view(bs, d, 1)
@@ -31,6 +18,8 @@ def outter(v1, v2):
 
 def _addr_(mat, vec1, vec2, alpha=1., beta=1.):
     """
+    Return
+        alpha * outter(vec1, vec2) + beta * [mat]
     :param mat:  (bs, npoints, dim, dim)
     :param vec1: (bs, npoints, dim)
     :param vec2: (bs, npoints, dim)
@@ -42,11 +31,6 @@ def _addr_(mat, vec1, vec2, alpha=1., beta=1.):
     assert len(mat.size()) == 4
     outter_n = outter(vec1.view(bs * npoints, dim), vec2.view(bs * npoints, dim))
     outter_n = outter_n.view(bs, npoints, dim, dim)
-
-    # outter_n = torch.bmm(
-    #     vec1.view(bs * npoints, dim, 1), vec2.view(bs * npoints, 1, dim)
-    # ).view(bs, npoints, dim, dim)
-
     out = alpha * outter_n + beta * mat.view(bs, npoints, dim, dim)
     return out
 
@@ -144,16 +128,17 @@ def tangential_projection_matrix(y, x):
     return normals, normals_proj
 
 
-def compute_deform_weight(x, deform, y_net, x_net,
-                          surface=False, detach=True, inverse=True,
-                          normalize=True, square=False):
+def compute_deform_weight(
+        x, deform, y_net, x_net, surface=False, detach=True, normalize=True):
     """
-    The weights for importance sampling!
+
     :param x:
     :param deform:
     :param y_net:
-    :param tang_proj:
+    :param x_net:
+    :param surface:
     :param detach:
+    :param normalize:
     :return:
     """
     bs, npoints, dim = x.size(0), x.size(1), x.size(2)
@@ -167,11 +152,6 @@ def compute_deform_weight(x, deform, y_net, x_net,
         # Find the change of area along the tangential plane
         yn, yn_proj = tangential_projection_matrix(y_net(y), y)
         xn, xn_proj = tangential_projection_matrix(x_net(x), x)
-        # J = torch.bmm(
-        #     yn_proj.view(-1, dim, dim),
-        #     torch.bmm(
-        #         J.view(-1, dim, dim),
-        #         xn_proj.view(-1, dim, dim)))
 
         J = torch.bmm(
             J.view(-1, dim, dim),
@@ -182,10 +162,9 @@ def compute_deform_weight(x, deform, y_net, x_net,
                    xn.view(bs, npoints, dim))
 
     weight = torch.abs(torch.linalg.det(J.view(bs * npoints, dim, dim)))
-    if int(dim) == 3 and square:
+    if int(dim) == 3:
         weight = weight ** 2
-    if inverse:
-        weight = 1. / weight.view(bs, npoints)
+    weight = 1. / weight.view(bs, npoints)
 
     if normalize:
         weight = weight / weight.sum(dim=-1, keepdim=True) * npoints
@@ -198,7 +177,7 @@ def compute_deform_weight(x, deform, y_net, x_net,
 def sample_points_for_loss(
         npoints, dim=3, use_surf_points=False, gtr=None, net=None,
         deform=None, invert_sampling=False, return_weight=False,
-        detach_weight=True, use_rejection=False, use_square=False):
+        detach_weight=True, use_rejection=False):
     if use_surf_points:
         if invert_sampling:
             assert deform is not None
@@ -215,7 +194,7 @@ def sample_points_for_loss(
                 lambda x: deform(x, None),
                 y_net=lambda x: gtr(x),
                 x_net=lambda x: net(x)[0],
-                surface=True, detach=detach_weight, square=use_square)
+                surface=True, detach=detach_weight)
         else:
             assert net is not None
             x = get_surf_pcl(
@@ -236,7 +215,7 @@ def sample_points_for_loss(
                 lambda x: deform(x, None),
                 y_net=lambda x: gtr(x),
                 x_net=lambda x: net(x)[0],
-                surface=False, detach=detach_weight, square=False)
+                surface=False, detach=detach_weight)
     bs = 1
     x = x.view(bs, npoints, dim)
     weight = weight.view(bs, npoints)
@@ -244,104 +223,3 @@ def sample_points_for_loss(
         return x, weight
     else:
         return x
-
-def _det_3x3_sym_(mat):
-    a = mat[..., 0, 0]
-    b = mat[..., 0, 1]
-    c = mat[..., 0, 2]
-    d = mat[..., 1, 1]
-    e = mat[..., 1, 2]
-    f = mat[..., 2, 2]
-    return a * (d * f - e * e) + b * (c * e - b * f) + c * (b * e - d * c)
-
-
-def _det_2x2_sym_(mat):
-    a = mat[..., 0, 0]
-    b = mat[..., 0, 1]
-    c = mat[..., 1, 1]
-    return a * c - b * b
-
-
-def mean_curvature(net, x, y=None, eps=0., return_grad=False):
-    if y is None:
-        x = x.clone()
-        x.requires_grad = True
-        y = net(x)
-    # return - 0.5 * laplace(y, x, normalize=True, eps=eps)
-
-    # By Level Set Methods and Dynamic Implicit Surfaces, Osher and Fedkiw
-    # Page 12, section 1.4
-    return laplace(y, x, normalize=True, eps=eps, return_grad=return_grad)
-
-
-def adjoint_hessian_3x3(y, x):
-    bs, n = x.size(0), x.size(1)
-    H, _ = hessian(y, x)
-    H = H.view(bs, n, 3, 3)
-
-    def det2x2(a, b, c, d):
-        return (a * d - b * c).view(bs, n, 1, 1)
-
-    def Hij(i, j):
-        return H[:, :, i - 1, j - 1]
-
-    adj_H = torch.cat([
-        torch.cat([
-            det2x2(Hij(2, 2), Hij(2, 3), Hij(3, 2), Hij(3, 3)),
-            - det2x2(Hij(1, 2), Hij(1, 3), Hij(3, 2), Hij(3, 3)),
-            det2x2(Hij(1, 2), Hij(1, 3), Hij(2, 2), Hij(2, 3)),
-        ], dim=-1),
-        torch.cat([
-            - det2x2(Hij(2, 1), Hij(2, 3), Hij(3, 1), Hij(3, 3)),
-            det2x2(Hij(1, 1), Hij(1, 3), Hij(3, 1), Hij(3, 3)),
-            - det2x2(Hij(1, 1), Hij(1, 3), Hij(2, 1), Hij(2, 3)),
-        ], dim=-1),
-        torch.cat([
-            det2x2(Hij(2, 1), Hij(2, 2), Hij(3, 1), Hij(3, 2)),
-            - det2x2(Hij(1, 1), Hij(1, 2), Hij(3, 1), Hij(3, 2)),
-            det2x2(Hij(1, 1), Hij(1, 2), Hij(2, 1), Hij(2, 2)),
-        ], dim=-1),
-    ], dim=-2)
-    return adj_H, H
-
-
-def adjoint_hessian_2x2(y, x):
-    bs, n = x.size(0), x.size(1)
-    H, _ = hessian(y, x)
-    H = H.view(bs, n, 2, 2)
-
-    def Hij(i, j):
-        return H[:, :, i, j].view(bs, n, 1, 1)
-
-    adj_H = torch.cat([
-        torch.cat([Hij(1, 1), -Hij(0, 1)], dim=-1),
-        torch.cat([-Hij(1, 0), Hij(0, 0)], dim=-1)
-    ], dim=-2)
-    return adj_H, H
-
-
-def gaussian_curvature(net, x, y=None, dim=3):
-    bs, n = x.size(0), x.size(1)
-    assert dim == x.size(2)
-    if y is None:
-        x = x.clone()
-        x.requires_grad = True
-        y = net(x)
-
-    if dim == 3:
-        adj_H, H = adjoint_hessian_3x3(y, x)
-    elif dim == 2:
-        adj_H, H = adjoint_hessian_2x2(y, x)
-    else:
-        raise ValueError
-    adj_H = adj_H.view(bs, n, dim, dim).view(bs * n, dim, dim).contiguous()
-
-    grad = gradient(y, x).view(bs, n, dim).view(bs * n, dim, 1)  # (dim, 1)
-    grad_T = grad.transpose(1, 2).contiguous()  # (1, dim)
-    grad_norm = torch.norm(grad, dim=1, keepdim=True).view(bs * n, 1, 1)
-
-    out = torch.bmm(grad_T, torch.bmm(adj_H, grad)) / (grad_norm ** 4)
-    out = out.view(bs, n, 1)
-    return out
-
-

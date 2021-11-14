@@ -19,7 +19,7 @@ trainer:
   epochs: 10
   seed: 100
   wrapper_type: 'distillation'
-  beta: 0.
+  beta: 2.
   boundary_weight: 1.
   boundary_num_points: 5000
   boundary_loss_points_update_step: 50
@@ -38,7 +38,7 @@ trainer:
 models:
   decoder:
     type: models.siren_mlp
-    path: pretrained/neural_fields/half_noisy_sphere/latest.pt
+    path: pretrained/neural_fields/noisy_torus/latest.pt
     dim: 3
     out_dim: 1
     hidden_size: 512

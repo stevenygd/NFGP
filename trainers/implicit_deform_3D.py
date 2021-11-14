@@ -6,7 +6,8 @@ from argparse import Namespace
 from trainers.utils.vis_utils import imf2mesh
 from trainers.implicit_deform import Trainer as BaseTrainer
 from trainers.utils.igp_utils import compute_deform_weight
-from trainers.utils.igp_utils import CD, EMD
+# from trainers.utils.igp_utils import CD, EMD
+from evaluation.evaluation_metrics import CD, EMD
 
 
 class Trainer(BaseTrainer):

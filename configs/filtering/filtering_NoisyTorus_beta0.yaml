@@ -38,7 +38,7 @@ trainer:
 models:
   decoder:
     type: models.siren_mlp
-    path: pretrained/neural_fields/half_noisy_sphere/latest.pt
+    path: pretrained/neural_fields/noisy_torus/latest.pt
     dim: 3
     out_dim: 1
     hidden_size: 512
