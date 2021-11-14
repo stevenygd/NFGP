@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn as nn
 
 
+# Initialization functions are borrowed from:
 # https://github.com/vsitzmann/siren/blob/4df34baee3f0f9c8f351630992c1fe1f69114b5f/modules.py#L622
 def sine_init(m):
     with torch.no_grad():
@@ -32,7 +33,7 @@ class Sine(nn.Module):
         return torch.sin(self.const * input)
 
 
-class Decoder(nn.Module):
+class Net(nn.Module):
     """ Decoder conditioned by adding.
 
     Example configuration:
@@ -66,15 +67,11 @@ class Decoder(nn.Module):
             torch.nn.init.constant_(self.blocks[-1].weight, 0)
             torch.nn.init.constant_(self.blocks[-1].bias, 0)
 
-    # This should have the same signature as the sig condition one
     def forward(self, x):
         """
         :param x: (bs, npoints, self.dim) Input coordinate (xyz)
-        :param c: (bs, self.zdim + 1) Shape latent code + sigma
-        TODO: will ignore [c] for now
         :return: (bs, npoints, self.dim) Gradient (self.dim dimension)
         """
-        # net = x.transpose(1, 2)  # (bs, dim, n_points)
         net = x  # (bs, n_points, dim)
         for block in self.blocks[:-1]:
             net = self.act(block(net))

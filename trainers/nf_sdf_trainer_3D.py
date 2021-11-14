@@ -1,6 +1,7 @@
 import os
 import torch
 import importlib
+import os.path as osp
 import torch.nn.functional as F
 from trainers.utils.diff_ops import gradient
 from trainers.utils.vis_utils import imf2mesh
@@ -18,7 +19,7 @@ class Trainer(BaseTrainer):
 
         # The networks
         lib = importlib.import_module(cfg.models.decoder.type)
-        self.net = lib.Decoder(cfg, cfg.models.decoder)
+        self.net = lib.Net(cfg, cfg.models.decoder)
         self.net.cuda()
         print("Net:")
         print(self.net)
@@ -28,9 +29,9 @@ class Trainer(BaseTrainer):
             self.net.parameters(), self.cfg.trainer.opt)
 
         # Prepare save directory
-        os.makedirs(os.path.join(cfg.save_dir, "val"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "images"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "checkpoints"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "val"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "images"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "checkpoints"), exist_ok=True)
 
     def update(self, data, *args, **kwargs):
         if 'no_update' in kwargs:
@@ -128,7 +129,7 @@ class Trainer(BaseTrainer):
                 if mesh is not None:
                     save_name = "mesh_%diters.obj" \
                                 % (step if step is not None else epoch)
-                    path = os.path.join(self.cfg.save_dir, "val", save_name)
+                    path = osp.join(self.cfg.save_dir, "val", save_name)
                     mesh.export(path)
 
     def validate(self, test_loader, epoch, *args, **kwargs):
@@ -144,8 +145,8 @@ class Trainer(BaseTrainer):
         if appendix is not None:
             d.update(appendix)
         save_name = "epoch_%s_iters_%s.pt" % (epoch, step)
-        path = os.path.join(self.cfg.save_dir, "checkpoints", save_name)
-        torch.save(d, path)
+        torch.save(d, osp.join(self.cfg.save_dir, "checkpoints", save_name))
+        torch.save(d, osp.join(self.cfg.save_dir, "latest.pt"))
 
     def resume(self, path, strict=True, **kwargs):
         ckpt = torch.load(path)

@@ -1,0 +1,46 @@
+# All data comes from the input fields (e.g. in the model)
+# So we only use a dummy data loader here.
+data:
+  type: datasets.dummy
+  num_workers: 0
+  train:
+    length: 100
+  val:
+    length: 1
+
+viz:
+  log_freq: 10
+  viz_freq: 100
+  save_freq: 1
+  val_freq: 1
+
+trainer:
+  type: trainers.smooth_sharpen_3D
+  epochs: 10
+  seed: 100
+  wrapper_type: 'distillation'
+  beta: 0.
+  boundary_weight: 1.
+  boundary_num_points: 5000
+  boundary_loss_points_update_step: 50
+  grad_norm_weight: 1e-2
+  grad_norm_num_points: 5000
+  lap_loss_weight: 1e-4
+  lap_loss_threshold: 50
+  lap_loss_num_points: 5000
+  opt:
+    type: 'adam'
+    lr: 1e-5
+    beta1: 0.9
+    beta2: 0.999
+    weight_decay: 0.
+
+models:
+  decoder:
+    type: models.siren_mlp
+    path: pretrained/half_noisy_sphere/latest.pt
+    dim: 3
+    out_dim: 1
+    hidden_size: 512
+    n_blocks: 5
+    z_dim: 1
