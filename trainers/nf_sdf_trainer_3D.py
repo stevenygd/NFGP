@@ -129,8 +129,8 @@ class Trainer(BaseTrainer):
                 if mesh is not None:
                     save_name = "mesh_%diters.obj" \
                                 % (step if step is not None else epoch)
-                    path = osp.join(self.cfg.save_dir, "val", save_name)
-                    mesh.export(path)
+                    mesh.export(osp.join(self.cfg.save_dir, "val", save_name))
+                    mesh.export(osp.join(self.cfg.save_dir, "latest_mesh.obj"))
 
     def validate(self, test_loader, epoch, *args, **kwargs):
         return {}
