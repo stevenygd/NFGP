@@ -39,13 +39,14 @@ We offer pre-processed dataset for reproducing the experimental results in the p
 The instruciton is in section [_Download Dataset_](#download-dataset). 
 If you want to run experiment for your own shape, you need to prepare data in the following two steps:
 1. Create SDF samples for the shape (See section [_Create SDF Samples_](#create-sdf-samples))
-2. Train a neural field to fit those samples (See section []()).
+2. Train a neural field to fit those samples (See section [Create Input Neural Fields](#create-input-neural-fields)).
 3. Depending on the tasks, create the user specified input. For deofmration task, please refer to section [_Create
  Deformation Handles_](#create-deformation-handles). For sharpening and smoothing, you can directly set it through
   the configuration file or the hyper-parameter.
 
 #### Download Dataset
 
+Available soon.
 
 #### Create SDF Samples 
 
@@ -68,7 +69,37 @@ These points will be saved to following files:
 Note that this pipeline works the best with watertight mesh.
 This processing pipeline takes about 5 - 10 minutes to finish for a mesh with 30k faces.
 
+#### Create Input Neural Fields 
+
+Once you've obtained the `sdf.npy` file in the previous subsection,
+you can use those data to train a neural field:
+```bash
+python train.py configs/recon/create_neural_fields.yaml --hparams data.path=<your_sdf.npy>
+```
+You can also create your own config following the examples in folder `configs/recon`.
+
+
 #### Create Deformation Handles 
 
-## 
-**Detailed instruction, dataset, and pretrained models will be available before the conference.**
+Available soon.
+
+## Smoothing and Sharpening 
+
+To run our methods on the smoothing or sharpening task, you can use the following configurations:
+```bash
+# Armadillo
+python train.py configs/filtering/filtering_Armadillo_beta0.yaml  # smoothing
+python train.py configs/filtering/filtering_Armadillo_beta2.yaml  # sharpening
+# Noisy sphere
+python train.py configs/filtering/filtering_HalfNoisySphere_beta0.yaml # smoothing
+python train.py configs/filtering/filtering_HalfNoisySphere_beta2.yaml # sharpening
+# Noisy torus
+python train.py configs/filtering/filtering_NoisyTorus_beta0.yaml # smoothing
+python train.py configs/filtering/filtering_NoisyTorus_beta2.yaml # sharpening
+```
+
+You can change the value of `beta` by adding `--hparams trainer.beta=<yourbeta>`.
+To run it on a different shape, you need to change the `models.decoder` to load the appropriate neural fields.
+
+## Deformation
+Available soon.

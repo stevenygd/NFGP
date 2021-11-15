@@ -3,10 +3,9 @@ import yaml
 import time
 import argparse
 import importlib
-from shutil import copy2
-from utils import AverageMeter
+import os.path as osp
+from utils import AverageMeter, dict2namespace, update_cfg_hparam_lst
 from torch.backends import cudnn
-from trainers.utils.utils import dict2namespace
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -29,22 +28,30 @@ def get_args():
 
     # Test run:
     parser.add_argument('--test_run', default=False, action='store_true')
+
+    # Hyper parameters
+    parser.add_argument('--hparams', default=[], nargs="+")
     args = parser.parse_args()
 
     # parse config file
     with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.Loader)
     config = dict2namespace(config)
+    config, hparam_str = update_cfg_hparam_lst(config, args.hparams)
 
     #  Create log_name
     cfg_file_name = os.path.splitext(os.path.basename(args.config))[0]
     run_time = time.strftime('%Y-%b-%d-%H-%M-%S')
+    post_fix = hparam_str + run_time
+
     # Currently save dir and log_dir are the same
-    config.log_name = "logs/%s_%s" % (cfg_file_name, run_time)
-    config.save_dir = "logs/%s_%s" % (cfg_file_name, run_time)
-    config.log_dir = "logs/%s_%s" % (cfg_file_name, run_time)
-    os.makedirs(config.log_dir+'/config')
-    copy2(args.config, config.log_dir+'/config/config.yaml')
+    config.log_name = "logs/%s_%s" % (cfg_file_name, post_fix)
+    config.save_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
+    config.log_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
+
+    os.makedirs(osp.join(config.log_dir, 'config'))
+    with open(osp.join(config.log_dir, "config", "config.yaml"), "w") as outf:
+        yaml.dump(config, outf)
     return args, config
 
 

@@ -4,13 +4,13 @@ data:
   type: datasets.dummy
   num_workers: 0
   train:
-    length: 100
+    length: 10
   val:
     length: 1
 
 viz:
   log_freq: 10
-  viz_freq: 100
+  viz_freq: 10
   save_freq: 1
   val_freq: 1
 
@@ -21,13 +21,13 @@ trainer:
   wrapper_type: 'distillation'
   beta: 0.
   boundary_weight: 1.
-  boundary_num_points: 5000
+  boundary_num_points: 10000
   boundary_loss_points_update_step: 50
   grad_norm_weight: 1e-2
-  grad_norm_num_points: 5000
-  lap_loss_weight: 1e-4
+  grad_norm_num_points: 10000
+  lap_loss_weight: 1e-5
   lap_loss_threshold: 50
-  lap_loss_num_points: 5000
+  lap_loss_num_points: 10000
   opt:
     type: 'adam'
     lr: 1e-5

@@ -1,9 +1,5 @@
-import os
-import yaml
 import torch
 import random
-import argparse
-import importlib
 import numpy as np
 from torch import optim
 
@@ -73,47 +69,3 @@ def set_random_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-
-
-def dict2namespace(config):
-    namespace = argparse.Namespace()
-    for key, value in config.items():
-        if isinstance(value, dict):
-            new_value = dict2namespace(value)
-        else:
-            new_value = value
-        setattr(namespace, key, new_value)
-    return namespace
-
-
-def load_imf(log_path, epoch=None, verbose=False, return_trainer=False):
-    # Load configuration
-    config_fpath = os.path.join(log_path, "config", "config.yaml")
-    with open(config_fpath) as f:
-        cfg = dict2namespace(yaml.load(f))
-    cfg.save_dir = "logs"
-
-    # Load pretrained checkpoints
-    ep2file = {}
-    last_file, last_ep = None, -1
-    for f in os.listdir(os.path.join(log_path, "checkpoints")):
-        ep = int(f.split("_")[1])
-        if verbose:
-            print(ep, f)
-        ep2file[ep] = os.path.join(log_path, "checkpoints", f)
-        if ep > last_ep:
-            last_ep = ep
-            last_file = os.path.join(log_path, "checkpoints", f)
-    if epoch is not None:
-        last_file = ep2file[epoch]
-    print(last_file)
-    trainer_lib = importlib.import_module(cfg.trainer.type)
-    trainer = trainer_lib.Trainer(cfg, None)
-    trainer.resume(last_file)
-
-    if return_trainer:
-        return trainer
-    else:
-        imf = trainer.decoder
-        del trainer
-        return imf
