@@ -1,0 +1,45 @@
+data:
+  type: datasets.single_shape_sdf_datasets
+  num_workers: 4
+  path: data/jolteon/sdf.npy
+  train:
+    length: 10000
+    batch_size: 10
+    num_sample_points: 10000
+  val:
+    length: 50
+    batch_size: 10
+    num_sample_points: 10000
+
+viz:
+  log_freq: 10
+  viz_freq: 1000
+  save_freq: 1
+  val_freq: 1
+
+trainer:
+  type: trainers.nf_sdf_trainer_3D
+  epochs: 100
+  seed: 100
+  ndf_loss_weight: 0.
+  sdf_loss_weight: 1.
+  grad_norm_weight: 1e-2
+  grad_norm_num_points: 10000
+  opt:
+    type: 'adam'
+    lr: 1e-5
+    beta1: 0.9
+    beta2: 0.999
+    momentum: 0.9  # for SGD
+    weight_decay: 0.
+    scheduler: linear
+    step_epoch: 200
+
+models:
+  decoder:
+    type: models.siren_mlp
+    dim: 3
+    out_dim: 1
+    hidden_size: 512
+    n_blocks: 5
+    z_dim: 128
