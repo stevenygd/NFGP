@@ -1,13 +1,11 @@
 import os
 import torch
 import trimesh
-import numpy as np
 from argparse import Namespace
 from trainers.utils.vis_utils import imf2mesh
+from evaluation.evaluation_metrics import CD, EMD
 from trainers.implicit_deform import Trainer as BaseTrainer
 from trainers.utils.igp_utils import compute_deform_weight
-# from trainers.utils.igp_utils import CD, EMD
-from evaluation.evaluation_metrics import CD, EMD
 
 
 class Trainer(BaseTrainer):
@@ -21,7 +19,7 @@ class Trainer(BaseTrainer):
         self.res = int(getattr(self.cfg.trainer, "mc_res", 256))
         self.thr = float(getattr(self.cfg.trainer, "mc_thr", 0.))
         self.original_mesh, self.original_mesh_stats = imf2mesh(
-            lambda x: self.original_decoder(x, None),
+            lambda x: self.original_decoder(x),
             res=self.res, threshold=self.thr,
             normalize=True, norm_type='res', return_stats=True
         )
@@ -48,7 +46,6 @@ class Trainer(BaseTrainer):
                 x_net=lambda x: self.decoder(x, None),
                 surface=True,
                 detach=getattr(self.presample_cfg, "detach_weight", False),
-                square=getattr(self.presample_cfg, "square", False),
             ).cuda().float().view(1, -1)
 
             data.update({
@@ -94,31 +91,6 @@ class Trainer(BaseTrainer):
                 path = os.path.join(self.cfg.save_dir, "vis", save_name)
                 mesh.export(path)
 
-                # # Visualize in tensorboard
-                # handles = train_data['handles'].cpu().float()
-                # assert handles.shape[0] == 1
-                # handles_colors = torch.from_numpy(
-                #     np.array([0., 0., 1.])
-                # ).view(1, 1, 3).expand(1, handles.shape[1], -1)
-
-                # targets = train_data['targets'].cpu().float()
-                # assert targets.shape[0] == 1
-                # targets_colors = torch.from_numpy(
-                #     np.array([1., 0., 0.])
-                # ).view(1, 1, 3).expand(1, handles.shape[0], -1)
-
-                # verts = torch.from_numpy(mesh.vertices).cpu().float().view(1, -1, 3)
-                # verts_colors = torch.from_numpy(
-                #     np.array([1., 1., 1.])
-                # ).view(1, 1, 3).expand(1, verts.shape[1], -1)
-
-                # vertices = torch.cat([verts, handles, targets], dim=1)
-                # colors = torch.cat([
-                #     verts_colors, handles_colors, targets_colors], dim=1)
-
-                # faces = torch.from_numpy(mesh.faces).cpu().int().view(1, -1, 3)
-                # writer.add_mesh("deformed", vertices, colors, faces)
-
     def validate(self, test_loader, epoch, *args, **kwargs):
         print("Validating : %d" % epoch)
         org_mesh_area = float(self.original_mesh.area)
@@ -134,7 +106,7 @@ class Trainer(BaseTrainer):
 
         with torch.no_grad():
             new_mesh, new_mesh_stats = imf2mesh(
-                lambda x: self.decoder(x, None),
+                lambda x: self.decoder(x),
                 res=self.res, threshold=self.thr,
                 normalize=True, norm_type='res', return_stats=True
             )

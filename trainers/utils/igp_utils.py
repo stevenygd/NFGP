@@ -191,7 +191,7 @@ def sample_points_for_loss(
 
             weight = compute_deform_weight(
                 x.view(1, -1, dim),
-                lambda x: deform(x, None),
+                lambda x: deform(x),
                 y_net=lambda x: gtr(x),
                 x_net=lambda x: net(x)[0],
                 surface=True, detach=detach_weight)
@@ -212,7 +212,7 @@ def sample_points_for_loss(
             x = deform.invert(y, iters=30).detach().cuda().float()
             weight = compute_deform_weight(
                 x.view(1, -1, dim),
-                lambda x: deform(x, None),
+                lambda x: deform(x),
                 y_net=lambda x: gtr(x),
                 x_net=lambda x: net(x)[0],
                 surface=False, detach=detach_weight)

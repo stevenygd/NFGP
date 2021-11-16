@@ -1,7 +1,7 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/arap_dino/deform_y_rotate-45.npy
+  path: data/dino/deform_y_rotate-45.npy
   train:
     length: 100
     batch_size: 1
@@ -67,8 +67,8 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/dino_sdfgtr_siren_1e-5_2021-May-03-09-37-26/checkpoints/epoch_9_iters_100000.pt
-    type: models.decoders.siren_mlp
+    path: pretrained/neural_fields/dino/latest.pt
+    type: models.siren_mlp
     dim: 3
     out_dim: 1
     hidden_size: 512
@@ -77,7 +77,7 @@ models:
   deform_wrapper:
     delta_x_add: False
   deform_decoder:
-    type: models.decoders.invert_res_relu_mlp
+    type: models.invert_res_relu_mlp
     dim: 3
     out_dim: 3
     hidden_size: 256

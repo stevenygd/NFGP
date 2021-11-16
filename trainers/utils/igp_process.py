@@ -90,19 +90,9 @@ def deform_step(
         net, opt, original, handles_ts, targets_ts, dim=3,
         sample_cfg=None, x=None, weights=1,
         # Loss handle
-        loss_h_weight=1., lag_mult=None, use_l1_loss=False, loss_h_thr=None,
+        loss_h_weight=1., use_l1_loss=False, loss_h_thr=None,
         # Loss G
         loss_g_weight=1e-2, n_g_pts=5000,
-        # Loss KM
-        loss_km_weight=1e-4, n_km_pts=5000, km_mask_thr=5., km_diff_type='abs',
-        km_use_surf_points=True, use_lapbal=False, km_invert_sample=True,
-        # Loss orthogonality
-        loss_orth_weight=0., n_orth_pts=5000, orth_reg_type='so',
-        orth_use_surf_points=True, orth_invert_sample=True,
-        # Loss determinant
-        loss_det_weight=0., n_det_pts=5000,
-        det_use_surf_points=True, det_invert_sample=True,
-        det_detach_weight=False,
 
         # Loss hessian
         loss_hess_weight=0., n_hess_pts=5000, hess_use_surf_points=True,
@@ -130,7 +120,7 @@ def deform_step(
         # y
         targets_ts = targets_ts.clone().detach().float().cuda()
         constr = (
-                net(targets_ts, None, return_delta=True)[0] + targets_ts - handles_ts
+            net(targets_ts, return_delta=True)[0] + targets_ts - handles_ts
         ).view(-1, dim).norm(dim=-1, keepdim=False)
         if loss_h_thr is not None:
             loss_h_thr = float(loss_h_thr)
@@ -152,8 +142,8 @@ def deform_step(
         use_surf_points = getattr(sample_cfg, "use_surf_points", True)
         x, weights = sample_points_for_loss(
             npoints, dim=dim, use_surf_points=use_surf_points,
-            gtr=(lambda x: original(x, None)),
-            net=(lambda x: net(x, None)),
+            gtr=(lambda x: original(x)),
+            net=(lambda x: net(x)),
             deform=net.deform, invert_sampling=invert_sampling,
             return_weight=True,
             detach_weight=getattr(sample_cfg, "detach_weight", True),
@@ -165,14 +155,14 @@ def deform_step(
 
     if loss_g_weight > 0.:
         loss_g = loss_eikonal(
-            lambda x: net(x, None), npoints=n_g_pts, dim=dim) * loss_g_weight
+            lambda x: net(x), npoints=n_g_pts, dim=dim) * loss_g_weight
     else:
         loss_g = torch.zeros(1).cuda().float()
 
     if loss_hess_weight > 0.:
         loss_hess = hessian_match_loss(
-            lambda x: original(x, None),
-            lambda x: net(x, None, return_both=True),
+            lambda x: original(x),
+            lambda x: net(x, return_both=True),
             dim=dim, npoints=n_hess_pts,
             use_surf_points=hess_use_surf_points,
             invert_sampling=hess_invert_sample,
@@ -194,8 +184,8 @@ def deform_step(
 
     if loss_stretch_weight > 0.:
         loss_stretch = simple_stretch_loss(
-            lambda x: original(x, None),
-            lambda x: net(x, None, return_both=True),
+            lambda x: original(x),
+            lambda x: net(x, return_both=True),
             deform=net.deform,
             npoints=n_s_pts, dim=dim,
             use_surf_points=stretch_use_surf_points,
@@ -221,15 +211,10 @@ def deform_step(
         torch.nn.utils.clip_grad_norm_(net.deform.parameters(), grad_clip)
 
     opt.step()
-    with torch.no_grad():
-        if lag_mult is not None:
-            assert constr is not None
-            lag_mult += loss_h_weight * constr
 
     return {
         'loss': loss.detach().cpu().item(),
         'loss_h': loss_h.detach().cpu().item(),
-        'lag_mult': lag_mult.detach().cpu() if lag_mult is not None else None,
         # Repairing
         'loss_g': loss_g.detach().cpu().item(),
         # Shell energy

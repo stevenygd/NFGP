@@ -1,13 +1,10 @@
 import os
-import tqdm
 import torch
 import importlib
-import numpy as np
-import torch.nn.functional as F
 from trainers.base_trainer import BaseTrainer
-from models.decoders.igp_modules import distillation, deformation
+from models.igp_wrapper import distillation, deformation
 from trainers.utils.utils import set_random_seed
-from trainers.utils.igp_process import deform_step, deform_mesh_o3d
+from trainers.utils.igp_process import deform_step
 from argparse import Namespace
 
 
@@ -22,10 +19,10 @@ class Trainer(BaseTrainer):
         # The networks
         if original_decoder is None:
             sn_lib = importlib.import_module(cfg.models.decoder.type)
-            self.original_decoder = sn_lib.Decoder(cfg, cfg.models.decoder)
+            self.original_decoder = sn_lib.Net(cfg, cfg.models.decoder)
             self.original_decoder.cuda()
             self.original_decoder.load_state_dict(
-                torch.load(cfg.models.decoder.path)['dec'])
+                torch.load(cfg.models.decoder.path)['net'])
             print("Original Decoder:")
             print(self.original_decoder)
         else:
@@ -57,10 +54,6 @@ class Trainer(BaseTrainer):
         # Set up basic parameters
         self.dim = getattr(cfg.trainer, "dim", 3)
         self.grad_clip = getattr(cfg.trainer, "grad_clip", None)
-        if hasattr(cfg.trainer, "lag_mul"):
-            self.lag_mult = float(cfg.trainer.lag_mul)
-        else:
-            self.lag_mult = None
         self.loss_h_weight = getattr(cfg.trainer, "loss_h_weight", 100)
         self.loss_h_thr = getattr(cfg.trainer, "loss_h_thr", 1e-3)
 
@@ -123,33 +116,11 @@ class Trainer(BaseTrainer):
             x=x_ts, weights=w_ts,
             sample_cfg=self.sample_cfg,
             # Loss handle
-            loss_h_weight=self.loss_h_weight, lag_mult=self.lag_mult,
+            loss_h_weight=self.loss_h_weight,
             loss_h_thr=self.loss_h_thr,
             # Loss G
             loss_g_weight=loss_g_weight,
             n_g_pts=getattr(self.loss_g_cfg, "num_points", 5000),
-            # Loss KM
-            loss_km_weight=loss_km_weight,
-            n_km_pts=getattr(self.loss_km_cfg, "num_points", 5000),
-            km_mask_thr=getattr(self.loss_km_cfg, "mask_thr", 10),
-            km_diff_type=getattr(self.loss_km_cfg, "diff_type", "abs"),
-            km_use_surf_points=getattr(self.loss_km_cfg, "use_surf_points", True),
-            use_lapbal=getattr(self.loss_km_cfg, "use_lapbal", True),
-            km_invert_sample=getattr(self.loss_km_cfg, "invert_sample", True),
-
-            # Loss orthogonality
-            loss_orth_weight=loss_orth_weight,
-            n_orth_pts=getattr(self.loss_orth_cfg, "num_points", 5000),
-            orth_reg_type=getattr(self.loss_orth_cfg, "orth_reg_type", "so"),
-            orth_use_surf_points=getattr(self.loss_orth_cfg, "use_surf_points", False),
-            orth_invert_sample=getattr(self.loss_orth_cfg, "invert_sample", True),
-
-            # Loss Jacobian determinant
-            loss_det_weight=loss_det_weight,
-            n_det_pts=getattr(self.loss_det_cfg, "num_points", 5000),
-            det_use_surf_points=getattr(self.loss_det_cfg, "use_surf_points", False),
-            det_invert_sample=getattr(self.loss_det_cfg, "invert_sample", True),
-            det_detach_weight=getattr(self.loss_det_cfg, "detach_weight", False),
 
             # Loss Hessian
             loss_hess_weight=loss_hess_weight,
@@ -193,9 +164,6 @@ class Trainer(BaseTrainer):
             # Gradient clipping
             grad_clip=self.grad_clip,
         )
-        self.lag_mult = step_res['lag_mult']
-        if step_res['lag_mult']:
-            step_res['lag_mult'] = step_res['lag_mult'].mean()
         step_res = {
             ('loss/%s' % k): v for k, v in step_res.items()
         }

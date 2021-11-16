@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from models.decoders.igp_modules import fixed_point_invert
+from models.igp_wrapper import fixed_point_invert
 
 
 class LipBoundedFourierFeatureEmd(nn.Module):
@@ -186,8 +186,7 @@ class InvertivleScaleAndShiftLayer(nn.Module):
         return (y - self.b) * torch.exp(- self.a)
 
 
-
-class Decoder(nn.Module):
+class Net(nn.Module):
     """ Decoder conditioned by adding.
 
     Example configuration:
@@ -227,11 +226,9 @@ class Decoder(nn.Module):
                 self.blocks.append(InvertivleScaleAndShiftLayer(self.dim))
 
     # This should have the same signature as the sig condition one
-    def forward(self, x, _):
+    def forward(self, x):
         """
         :param x: (bs, npoints, self.dim) Input coordinate (xyz)
-        :param c: (bs, self.zdim + 1) Shape latent code + sigma
-        TODO: will ignore [c] for now
         :return: (bs, npoints, self.dim) Gradient (self.dim dimension)
         """
         out = x
