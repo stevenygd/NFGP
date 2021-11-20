@@ -35,27 +35,34 @@ def _addr_(mat, vec1, vec2, alpha=1., beta=1.):
     return out
 
 
-def get_surf_pcl(net, npoints=1000, dim=3, steps=5, eps=1e-4,
-                 noise_sigma=0.01, filtered=True, sigma_decay=1.,
-                 max_repeat=10, bound=(1 - 1e-4),
-                 use_rejection=False, rejection_bs=100000, rejection_thr=0.05):
+def get_surf_pcl(net, npoints=1000, dim=3, use_rejection=True, **kwargs):
     if use_rejection:
-        return get_surf_pcl_with_rejection(
-            net, npoints=npoints, batch_size=rejection_bs, dim=dim,
-            thr=rejection_thr, gstep=True)
+        return get_surf_pcl_rejection(net, npoints, dim, **kwargs)
     else:
-        return get_surf_pcl_defaut(
-            net, npoints=npoints, dim=dim, steps=steps, eps=eps,
-            noise_sigma=noise_sigma, filtered=filtered, sigma_decay=sigma_decay,
-            max_repeat=max_repeat, bound=bound)
+        return get_surf_pcl_langevin_dynamic(net, npoints, dim, **kwargs)
 
 
-def get_surf_pcl_with_rejection(
-        net, npoints=1000, batch_size=100000, dim=3, thr=0.05, gstep=True):
+def get_surf_pcl_rejection(
+        net, npoints, dim, batch_size=100000, thr=0.05, return_rej_x=False):
+    """
+    Sampling points with rejection sampling. We first sample uniformly from
+    [-1, 1]^3, then reject all points with |distance| > [thr]. Once gathered
+    enough rejected points, we will take a gradient step toward the surface:
+        y = x - F(x)n(x)
+    :param net: Neural field
+    :param npoints: Number of points to sample
+    :param dim: Dimension of the points
+    :param batch_size: Batch size per iteration
+    :param thr: Rejection threshold
+    :param return_rej_x: Whether returned points right after rejection.
+    :return:
+        [x] Sampled points
+        [rej_x]? Obtained points after rejection.
+    """
     out = []
-    out_cnt = 0
+    cnt = 0
     with torch.no_grad():
-        while out_cnt < npoints:
+        while cnt < npoints:
             x = torch.rand(1, batch_size, dim).cuda().float() * 2 - 1
             y = torch.abs(net(x))
             m = (y < thr).view(1, batch_size)
@@ -64,22 +71,24 @@ def get_surf_pcl_with_rejection(
                 continue
             x_eq = x[m].view(m_cnt, dim)
             out.append(x_eq)
-            out_cnt += m_cnt
-    x = torch.cat(out, dim=0)[:npoints, :]
-    if gstep:
-        if x.is_leaf:
-            x.requires_grad = True
-        else:
-            x.retain_grad()
-        y = net(x)
-        g = gradient(y, x).view(npoints, dim).detach()
-        g = g / g.norm(dim=-1, keepdim=True)
-        x = x - g * y
+            cnt += m_cnt
+    rej_x = x = torch.cat(out, dim=0)[:npoints, :]
+
+    if x.is_leaf:
+        x.requires_grad = True
+    else:
+        x.retain_grad()
+    y = net(x)
+    g = gradient(y, x).view(npoints, dim).detach()
+    g = g / g.norm(dim=-1, keepdim=True)
+    x = x - g * y
+    if return_rej_x:
+        return x, rej_x
     return x
 
 
-def get_surf_pcl_defaut(
-        net, npoints=1000, dim=3, steps=5, eps=1e-4,
+def get_surf_pcl_langevin_dynamic(
+        net, npoints, dim, steps=5, eps=1e-4,
         noise_sigma=0.01, filtered=True, sigma_decay=1.,
         max_repeat=10, bound=(1 - 1e-4)):
     out_cnt = 0
@@ -118,6 +127,16 @@ def get_surf_pcl_defaut(
 
 
 def tangential_projection_matrix(y, x):
+    """
+    Compute the tangential projection matrix:
+        P = I - n(x)n(x)^T
+        where n(x) is the outward surface normal of x
+    :param x: (bs, npts, dim) input points
+    :param y: (bs, npts, 1) neural_field(x)
+    :return:
+        [normals] (bs, npts, dim) The surface normal
+        [normals_proj] (bs, npts, dim, dim) The projector matrices
+    """
     bs, npoints, dim = x.size(0), x.size(1), x.size(2)
     grad = gradient(y, x)
     normals = (grad / grad.norm(dim=-1, keepdim=True)).view(bs, npoints, dim)
@@ -128,16 +147,16 @@ def tangential_projection_matrix(y, x):
     return normals, normals_proj
 
 
-def compute_deform_weight(
-        x, deform, y_net, x_net, surface=False, detach=True, normalize=True):
+def compute_invert_weight(
+        x, deform, inp_nf, out_nf, surface=False, normalize=True):
     """
+    Computing the weight in Section 5.3.3.
 
-    :param x:
-    :param deform:
-    :param y_net:
-    :param x_net:
-    :param surface:
-    :param detach:
+    :param x: (bs, npts, dim) Points from the output space
+    :param deform: Network that maps output space to input space
+    :param inp_nf: Neural fields of the input space
+    :param out_nf: Neural fields of the output space
+    :param surface: Whether the inverse is for surface integral.
     :param normalize:
     :return:
     """
@@ -150,8 +169,8 @@ def compute_deform_weight(
 
     if surface:
         # Find the change of area along the tangential plane
-        yn, yn_proj = tangential_projection_matrix(y_net(y), y)
-        xn, xn_proj = tangential_projection_matrix(x_net(x), x)
+        yn, yn_proj = tangential_projection_matrix(inp_nf(y), y)
+        xn, xn_proj = tangential_projection_matrix(out_nf(x), x)
 
         J = torch.bmm(
             J.view(-1, dim, dim),
@@ -169,38 +188,31 @@ def compute_deform_weight(
     if normalize:
         weight = weight / weight.sum(dim=-1, keepdim=True) * npoints
 
-    if detach:
-        weight = weight.detach()
     return weight
 
 
-def sample_points_for_loss(
-        npoints, dim=3, use_surf_points=False, gtr=None, net=None,
-        deform=None, invert_sampling=False, return_weight=False,
+def sample_points(
+        npoints, dim=3, sample_surf_points=False,
+        inp_nf=None, out_nf=None, deform=None,
+        invert_sampling=False,
         detach_weight=True, use_rejection=False):
-    if use_surf_points:
+    if sample_surf_points:
         if invert_sampling:
             assert deform is not None
-            assert gtr is not None
+            assert inp_nf is not None
             y = get_surf_pcl(
-                lambda x: gtr(x), npoints=npoints, dim=dim,
-                steps=5, noise_sigma=1e-3, filtered=False,
-                sigma_decay=1., use_rejection=use_rejection
+                inp_nf, npoints=npoints, dim=dim,
+                use_rejection=use_rejection
             )
             x = deform.invert(y, iters=30).detach().cuda().float()
 
-            weight = compute_deform_weight(
+            weight = compute_invert_weight(
                 x.view(1, -1, dim),
-                lambda x: deform(x),
-                y_net=lambda x: gtr(x),
-                x_net=lambda x: net(x)[0],
-                surface=True, detach=detach_weight)
+                deform=deform, inp_nf=inp_nf, out_nf=out_nf, surface=True)
         else:
-            assert net is not None
+            assert out_nf is not None
             x = get_surf_pcl(
-                lambda x: net(x)[0], npoints=npoints, dim=dim,
-                steps=5, noise_sigma=1e-3, filtered=False, sigma_decay=1.,
-                use_rejection=use_rejection
+                out_nf, npoints=npoints, dim=dim, use_rejection=use_rejection
             ).detach().cuda().float()
             weight = torch.ones(1, npoints).cuda().float()
     else:
@@ -210,16 +222,12 @@ def sample_points_for_loss(
             assert deform is not None
             y = x
             x = deform.invert(y, iters=30).detach().cuda().float()
-            weight = compute_deform_weight(
+            weight = compute_invert_weight(
                 x.view(1, -1, dim),
-                lambda x: deform(x),
-                y_net=lambda x: gtr(x),
-                x_net=lambda x: net(x)[0],
-                surface=False, detach=detach_weight)
-    bs = 1
-    x = x.view(bs, npoints, dim)
-    weight = weight.view(bs, npoints)
-    if return_weight:
-        return x, weight
-    else:
-        return x
+                deform=deform, inp_nf=inp_nf, out_nf=out_nf, surface=False)
+
+    x = x.view(1, npoints, dim)
+    weight = weight.view(1, npoints)
+    if detach_weight:
+        weight = weight.detach()
+    return x, weight

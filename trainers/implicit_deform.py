@@ -1,11 +1,115 @@
 import os
 import torch
 import importlib
-from trainers.base_trainer import BaseTrainer
-from models.igp_wrapper import distillation, deformation
-from trainers.utils.utils import set_random_seed
-from trainers.utils.igp_process import deform_step
 from argparse import Namespace
+import torch.nn.functional as F
+from trainers.base_trainer import BaseTrainer
+from trainers.utils.utils import set_random_seed
+from models.igp_wrapper import distillation, deformation
+from trainers.losses.implicit_thin_shell_losses import \
+    stretch_loss, bending_loss
+from trainers.losses.eikonal_loss import loss_eikonal
+from trainers.utils.igp_utils import sample_points
+
+def deform_step(
+        net, opt, original, handles_ts, targets_ts, dim=3,
+        # Clip gradient
+        grad_clip=None,
+        # Sample points
+        sample_cfg=None, x=None, weights=1,
+        # Loss handle
+        loss_h_weight=1., use_l1_loss=False, loss_h_thr=None,
+        # Loss G
+        loss_g_weight=1e-2, n_g_pts=5000,
+        # Loss bending
+        loss_hess_weight=0., n_hess_pts=5000, hess_use_surf_points=True,
+        hess_invert_sample=True, hess_detach_weight=True, hess_use_rejection=False,
+        # Loss stretch
+        loss_stretch_weight=0., n_s_pts=5000, stretch_use_surf_points=True,
+        stretch_invert_sample=True, stretch_loss_type='area_length',
+        stretch_use_weight=False, stretch_detach_weight=True,
+        stretch_use_rejection=False,
+):
+    opt.zero_grad()
+
+    # Compute handle losses
+    # x
+    handles_ts = handles_ts.clone().detach().float().cuda()
+    # y
+    targets_ts = targets_ts.clone().detach().float().cuda()
+    constr = (
+            net(targets_ts, return_delta=True)[0] + targets_ts - handles_ts
+    ).view(-1, dim).norm(dim=-1, keepdim=False)
+    if loss_h_thr is not None:
+        loss_h_thr = float(loss_h_thr)
+        constr = F.relu(constr - loss_h_thr)
+    if use_l1_loss:
+        loss_h = F.l1_loss(
+            constr, torch.zeros_like(constr)) * loss_h_weight
+    else:
+        loss_h = F.mse_loss(
+            constr, torch.zeros_like(constr)) * loss_h_weight
+
+    if sample_cfg is not None and x is None:
+        x, weights = sample_points(
+            npoints=getattr(sample_cfg, "num_points", 5000),
+            dim=dim, inp_nf=original, out_nf=net, deform=net.deform,
+            sample_surf_points=getattr(sample_cfg, "use_surf_points", True),
+            invert_sampling=getattr(sample_cfg, "invert_sample", True),
+            detach_weight=getattr(sample_cfg, "detach_weight", True),
+            use_rejection=getattr(sample_cfg, "use_rejection", False)
+        )
+
+    if loss_g_weight > 0.:
+        loss_g = loss_eikonal(net, npoints=n_g_pts, dim=dim, x=x) * loss_g_weight
+    else:
+        loss_g = torch.zeros(1).cuda().float()
+
+    if loss_hess_weight > 0.:
+        loss_hess = bending_loss(
+            inp_nf=original, out_nf=net, deform=net.deform,
+            dim=dim, npoints=n_hess_pts,
+            use_surf_points=hess_use_surf_points,
+            invert_sampling=hess_invert_sample,
+            x=x, weights=weights,
+            detach_weight=hess_detach_weight,
+            use_rejection=hess_use_rejection,
+        )
+        loss_hess *= loss_hess_weight
+    else:
+        loss_hess = torch.zeros(1).cuda().float()
+
+    if loss_stretch_weight > 0.:
+        loss_stretch = stretch_loss(
+            inp_nf=original, out_nf=net, deform=net.deform,
+            npoints=n_s_pts, dim=dim,
+            use_surf_points=stretch_use_surf_points,
+            invert_sampling=stretch_invert_sample,
+            loss_type=stretch_loss_type,
+            x=x, weights=weights,
+            detach_weight=stretch_detach_weight,
+            use_rejection=stretch_use_rejection,
+        )
+        loss_stretch *= loss_stretch_weight
+    else:
+        loss_stretch = torch.zeros(1).cuda().float()
+
+    loss = loss_h + loss_g + loss_hess + loss_stretch
+    loss.backward()
+    if grad_clip is not None:
+        torch.nn.utils.clip_grad_norm_(net.deform.parameters(), grad_clip)
+
+    opt.step()
+
+    return {
+        'loss': loss.detach().cpu().item(),
+        'loss_h': loss_h.detach().cpu().item(),
+        # Repairing
+        'loss_g': loss_g.detach().cpu().item(),
+        # Shell energy
+        'loss_hess': loss_hess.detach().cpu().item(),
+        'loss_stretch': loss_stretch.detach().cpu().item()
+    }
 
 
 class Trainer(BaseTrainer):
@@ -127,15 +231,8 @@ class Trainer(BaseTrainer):
             n_hess_pts=getattr(self.loss_hess_cfg, "num_points", 5000),
             hess_use_surf_points=getattr(self.loss_hess_cfg, "use_surf_points", True),
             hess_invert_sample=getattr(self.loss_hess_cfg, "invert_sample", True),
-            hess_type=getattr(self.loss_hess_cfg, "hess_type", 'direct'),
-            hess_tang_proj=getattr(self.loss_hess_cfg, "tang_proj", True),
-            hess_tang_extend=getattr(self.loss_hess_cfg, "tang_extend", False),
-            hess_use_weight=getattr(self.loss_hess_cfg, "use_weight", True),
-            hess_quantile=getattr(self.loss_hess_cfg, "quantile", None),
-            hess_use_bending=getattr(self.loss_hess_cfg, "use_bending", True),
             hess_detach_weight=getattr(self.loss_hess_cfg, "detach_weight", False),
             hess_use_rejection=getattr(self.loss_hess_cfg, "use_rejection", False),
-            hess_use_square=getattr(self.loss_hess_cfg, "use_square", False),
 
             # Loss stretch
             loss_stretch_weight=loss_stretch_weight,
@@ -144,22 +241,14 @@ class Trainer(BaseTrainer):
                 self.loss_stretch_cfg, "use_surf_points", True),
             stretch_invert_sample=getattr(
                 self.loss_stretch_cfg, "invert_sample", True),
-            stretch_extend_tang=getattr(
-                self.loss_stretch_cfg, "tang_extend", True),
-            stretch_proj_tang=getattr(
-                self.loss_stretch_cfg, "tang_proj", True),
             stretch_loss_type=getattr(
-                self.loss_stretch_cfg, "loss_type", "simple"),
+                self.loss_stretch_cfg, "loss_type", "l2"),
             stretch_use_weight=getattr(
                 self.loss_stretch_cfg, "use_weight", True),
-            stretch_alpha=getattr(self.loss_stretch_cfg, "alpha", 0.),
-            stretch_beta=getattr(self.loss_stretch_cfg, "beta", 1.),
             stretch_detach_weight=getattr(
                 self.loss_stretch_cfg, "detach_weight", False),
             stretch_use_rejection=getattr(
                 self.loss_stretch_cfg, "use_rejection", False),
-            stretch_use_square=getattr(
-                self.loss_stretch_cfg, "use_square", False),
 
             # Gradient clipping
             grad_clip=self.grad_clip,

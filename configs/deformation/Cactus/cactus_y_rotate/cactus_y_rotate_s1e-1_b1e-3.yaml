@@ -25,37 +25,15 @@ trainer:
     num_points: 5000
     detach_weight: False
     use_rejection: True
-    use_square: True
   # Loss configurations
   loss_h_weight: 100.
   loss_h_thr: 1e-4
   loss_g:
     weight: 0.
-    num_points: 0
-  loss_km:
-    weight: 0.
-    num_points: 0
   loss_stretch:
     weight: 1e-1
-    num_points: 5000
-    invert_sample: True
-    use_weight: True
-    use_surf_points: True
-    loss_type: simple
-    detach_weight: False
-    use_rejection: True
-    use_square: True
   loss_hess:
     weight: 1e-3
-    num_points: 5000
-    invert_sample: True
-    use_weight: True
-    use_surf_points: True
-    hess_type: direct
-    use_bending: True
-    detach_weight: False
-    use_rejection: True
-    use_square: True
   # Optimization configurations
   opt_deform:
     type: 'adam'

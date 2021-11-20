@@ -1,11 +1,12 @@
 import os
 import torch
 import trimesh
+import numpy as np
 from argparse import Namespace
 from trainers.utils.vis_utils import imf2mesh
 from evaluation.evaluation_metrics import CD, EMD
 from trainers.implicit_deform import Trainer as BaseTrainer
-from trainers.utils.igp_utils import compute_deform_weight
+from trainers.utils.igp_utils import compute_invert_weight
 
 
 class Trainer(BaseTrainer):
@@ -26,7 +27,8 @@ class Trainer(BaseTrainer):
 
         if hasattr(self.cfg.trainer, "mesh_presample"):
             self.presample_cfg = self.cfg.trainer.mesh_presample
-            self.presmp_npoints = getattr(self.presample_cfg, "num_points", 10000)
+            self.presmp_npoints = getattr(
+                self.presample_cfg, "num_points", 10000)
         else:
             self.presmp_npoints = None
 
@@ -39,14 +41,16 @@ class Trainer(BaseTrainer):
                     iters=30
                 ).view(1, -1, 3).cuda().float()
 
-            weights = compute_deform_weight(
+            weights = compute_invert_weight(
                 x_invert_uniform,
-                deform=lambda x: self.decoder.deform(x, None),
-                y_net=lambda x: self.original_decoder(x, None),
-                x_net=lambda x: self.decoder(x, None),
+                inp_nf=self.original_decoder,
+                out_nf=self.decoder,
+                deform=self.decoder.deform,
                 surface=True,
-                detach=getattr(self.presample_cfg, "detach_weight", False),
             ).cuda().float().view(1, -1)
+
+            if getattr(self.presample_cfg, "detach_weight", False):
+                weights = weights.detach()
 
             data.update({
                 'x': x_invert_uniform,
@@ -93,7 +97,6 @@ class Trainer(BaseTrainer):
 
     def validate(self, test_loader, epoch, *args, **kwargs):
         print("Validating : %d" % epoch)
-        org_mesh_area = float(self.original_mesh.area)
 
         cd_gtr = 0
         emd_gtr = 0
@@ -126,16 +129,20 @@ class Trainer(BaseTrainer):
                     gtr_faces = test_data['gtr_faces'].detach().view(-1, 3).cpu().numpy()
                     gtr_mesh = trimesh.Trimesh(vertices=gtr_verts, faces=gtr_faces)
 
-                    gtr_pcl0 = gtr_mesh.sample(npoints)
-                    gtr_pcl1 = gtr_mesh.sample(npoints)
-                    out_pcl = new_mesh.sample(npoints)
+                    gtr_pcl0 = gtr_mesh.sample(npoints)[np.newaxis, ...]
+                    gtr_pcl1 = gtr_mesh.sample(npoints)[np.newaxis, ...]
+                    out_pcl = new_mesh.sample(npoints)[np.newaxis, ...]
 
-                    cd_gtr = CD(gtr_pcl0, gtr_pcl1)
-                    cd_out = CD(gtr_pcl0, out_pcl)
+                    cd_gtr = CD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(gtr_pcl1))
+                    cd_out = CD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(out_pcl))
                     cd_ratio = cd_out / (cd_gtr + 1e-8)
 
-                    emd_gtr = EMD(gtr_pcl0, gtr_pcl1)
-                    emd_out = EMD(gtr_pcl0, out_pcl)
+                    emd_gtr = EMD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(gtr_pcl1))
+                    emd_out = EMD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(out_pcl))
                     emd_ratio = emd_out / (emd_gtr + 1e-8)
 
         res = {
