@@ -132,17 +132,22 @@ class Trainer(BaseTrainer):
                     gtr_pcl0 = gtr_mesh.sample(npoints)[np.newaxis, ...]
                     gtr_pcl1 = gtr_mesh.sample(npoints)[np.newaxis, ...]
                     out_pcl = new_mesh.sample(npoints)[np.newaxis, ...]
+                    print(gtr_pcl0.shape, gtr_pcl1.shape, out_pcl.shape)
 
-                    cd_gtr = CD(
+                    cd_gtr, dists_gtr = CD(
                         torch.from_numpy(gtr_pcl0), torch.from_numpy(gtr_pcl1))
-                    cd_out = CD(
+                    cd_out, dists_out = CD(
                         torch.from_numpy(gtr_pcl0), torch.from_numpy(out_pcl))
                     cd_ratio = cd_out / (cd_gtr + 1e-8)
 
-                    emd_gtr = EMD(
-                        torch.from_numpy(gtr_pcl0), torch.from_numpy(gtr_pcl1))
-                    emd_out = EMD(
-                        torch.from_numpy(gtr_pcl0), torch.from_numpy(out_pcl))
+                    emd_gtr, _ = EMD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(gtr_pcl1),
+                        dist=dists_gtr
+                    )
+                    emd_out, _ = EMD(
+                        torch.from_numpy(gtr_pcl0), torch.from_numpy(out_pcl),
+                        dist=dists_out
+                    )
                     emd_ratio = emd_out / (emd_gtr + 1e-8)
 
         res = {

@@ -18,7 +18,7 @@ def CD(x, y, dist=None, return_dist=False):
     """
     with torch.no_grad():
         if dist is None:
-            bs, npts, mpts, dim = x.size(0), x.size(1), y.size(2), x.size(2)
+            bs, npts, mpts, dim = x.size(0), x.size(1), y.size(1), x.size(2)
             dim = x.shape[-1]
             x = x.reshape(bs, npts, 1, dim)
             y = y.reshape(bs, 1, mpts, dim)
@@ -41,7 +41,7 @@ def EMD(x, y, dist=None, return_dist=False):
     :return: (bs,) Batch of EMDs
     """
     with torch.no_grad():
-        bs, npts, mpts, dim = x.size(0), x.size(1), y.size(2), x.size(2)
+        bs, npts, mpts, dim = x.size(0), x.size(1), y.size(1), x.size(2)
         assert npts == mpts, "EMD only works if two point clouds are equal size"
         if dist is None:
             dim = x.shape[-1]
@@ -58,7 +58,9 @@ def EMD(x, y, dist=None, return_dist=False):
             emd_lst.append(emd_i)
         emd = np.stack(emd_lst).reshape(-1)
         emd_torch = torch.from_numpy(emd).to(x)
-    return emd_torch
+    if return_dist:
+        return emd_torch, dist
+    return emd_torch, None
 
 
 def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
