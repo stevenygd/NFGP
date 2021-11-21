@@ -1,0 +1,65 @@
+data:
+  type: datasets.deform_handles_datasets
+  num_workers: 4
+  path: data/dino/deform_y_rotate-45.npy
+  train:
+    length: 100
+    batch_size: 1
+  val:
+    length: 50
+    batch_size: 10
+
+viz:
+  log_freq: 1
+  viz_freq: 100
+  save_freq: 10
+  val_freq: 1
+
+trainer:
+  type: trainers.implicit_deform_3D
+  epochs: 1000
+  seed: 100
+  wrapper_type: 'deformation'
+  show_network_hist: False
+  sample_cfg:
+    num_points: 5000
+    detach_weight: True
+    use_rejection: True
+  # Loss configurations
+  # Handle loss
+  loss_h_weight: 100.
+  # loss_h_thr: 1e-4
+  loss_stretch:  # Stretch loss
+    weight: 1e-1
+  loss_bend:  # Hessian loss
+    weight: 0
+  loss_g:  # Gradient norm == 1 loss
+    weight: 0.
+    num_points: 0
+  # Optimization configurations
+  opt:
+    type: 'adam'
+    lr: 1e-4
+    beta1: 0.9
+    beta2: 0.999
+    weight_decay: 0.
+
+models:
+  decoder:
+    path: pretrained/neural_fields/dino/latest.pt
+    type: models.siren_mlp
+    dim: 3
+    out_dim: 1
+    hidden_size: 512
+    n_blocks: 5
+    z_dim: 1
+  deform_wrapper:
+    delta_x_add: False
+  deform_decoder:
+    type: models.inv_res
+    dim: 3
+    out_dim: 3
+    hidden_size: 256
+    n_blocks: 6
+    nonlin: elu
+    pos_enc_freq: 5
