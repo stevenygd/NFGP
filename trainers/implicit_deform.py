@@ -11,6 +11,7 @@ from trainers.losses.implicit_thin_shell_losses import \
 from trainers.losses.eikonal_loss import loss_eikonal
 from trainers.utils.igp_utils import sample_points
 
+
 def deform_step(
         net, opt, original, handles_ts, targets_ts, dim=3,
         # Clip gradient
@@ -166,25 +167,10 @@ class Trainer(BaseTrainer):
         else:
             self.loss_g_cfg = Namespace(**{})
 
-        if hasattr(cfg.trainer, "loss_km"):
-            self.loss_km_cfg = cfg.trainer.loss_km
+        if hasattr(cfg.trainer, "loss_bend"):
+            self.loss_bend_cfg = cfg.trainer.loss_bend
         else:
-            self.loss_km_cfg = Namespace(**{})
-
-        if hasattr(cfg.trainer, "loss_orth"):
-            self.loss_orth_cfg = cfg.trainer.loss_orth
-        else:
-            self.loss_orth_cfg = Namespace(**{})
-
-        if hasattr(cfg.trainer, "loss_det"):
-            self.loss_det_cfg = cfg.trainer.loss_det
-        else:
-            self.loss_det_cfg = Namespace(**{})
-
-        if hasattr(cfg.trainer, "loss_hess"):
-            self.loss_hess_cfg = cfg.trainer.loss_hess
-        else:
-            self.loss_hess_cfg = Namespace(**{})
+            self.loss_bend_cfg = Namespace(**{})
 
         if hasattr(cfg.trainer, "loss_stretch"):
             self.loss_stretch_cfg = cfg.trainer.loss_stretch
@@ -208,10 +194,7 @@ class Trainer(BaseTrainer):
             w_ts = 1.
 
         loss_g_weight = float(getattr(self.loss_g_cfg, "weight", 1e-3))
-        loss_km_weight = float(getattr(self.loss_km_cfg, "weight", 1e-3))
-        loss_orth_weight = float(getattr(self.loss_orth_cfg, "weight", 0.))
-        loss_det_weight = float(getattr(self.loss_det_cfg, "weight", 0.))
-        loss_hess_weight = float(getattr(self.loss_hess_cfg, "weight", 0.))
+        loss_hess_weight = float(getattr(self.loss_bend_cfg, "weight", 0.))
         loss_stretch_weight = float(
             getattr(self.loss_stretch_cfg, "weight", 0))
         step_res = deform_step(
@@ -228,11 +211,11 @@ class Trainer(BaseTrainer):
 
             # Loss Hessian
             loss_hess_weight=loss_hess_weight,
-            n_hess_pts=getattr(self.loss_hess_cfg, "num_points", 5000),
-            hess_use_surf_points=getattr(self.loss_hess_cfg, "use_surf_points", True),
-            hess_invert_sample=getattr(self.loss_hess_cfg, "invert_sample", True),
-            hess_detach_weight=getattr(self.loss_hess_cfg, "detach_weight", False),
-            hess_use_rejection=getattr(self.loss_hess_cfg, "use_rejection", False),
+            n_hess_pts=getattr(self.loss_bend_cfg, "num_points", 5000),
+            hess_use_surf_points=getattr(self.loss_bend_cfg, "use_surf_points", True),
+            hess_invert_sample=getattr(self.loss_bend_cfg, "invert_sample", True),
+            hess_detach_weight=getattr(self.loss_bend_cfg, "detach_weight", False),
+            hess_use_rejection=getattr(self.loss_bend_cfg, "use_rejection", False),
 
             # Loss stretch
             loss_stretch_weight=loss_stretch_weight,
@@ -259,9 +242,6 @@ class Trainer(BaseTrainer):
         step_res['loss'] = step_res['loss/loss']
         step_res.update({
             "weight/loss_h_weight": self.loss_h_weight,
-            "weight/loss_km_weight": loss_km_weight,
-            'weight/loss_orth_weight': loss_orth_weight,
-            'weight/loss_det_weight': loss_det_weight,
             'weight/loss_hess_weight': loss_hess_weight,
             'weight/loss_stretch_weight': loss_stretch_weight,
         })

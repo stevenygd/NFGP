@@ -196,14 +196,30 @@ def sample_points(
         inp_nf=None, out_nf=None, deform=None,
         invert_sampling=False,
         detach_weight=True, use_rejection=False):
+    """
+    Sample points from the neural fields: inp_nf, out_nf, and deform.
+
+    :param npoints: Number of points to sample.
+    :param dim: Dimension of the points.
+    :param sample_surf_points:
+    :param inp_nf: Input neural fields. F: (bs, npts, dim) -> (bs, npts, 1)
+    :param out_nf: Output neural fields. G: (bs, npts, dim) -> (bs, npts, 1)
+    :param deform: Neural fields that deofrm from output space to input space.
+                   (bs, npts, dim) -> (bs, npts, dim)
+    :param invert_sampling: Whether sample from [inp_nf] then invert the points
+                            through the [deform] to become samples of [out_nf]
+    :param detach_weight: Whether detach the weights.
+    :param use_rejection: Whether use rejection to sample.
+    :return:
+        [x] (1, npoints, dim) Sampled points on the surface of [out_nf](x) = 0.
+        [weights] the weights for inverting the surface intergral.
+    """
     if sample_surf_points:
         if invert_sampling:
             assert deform is not None
             assert inp_nf is not None
             y = get_surf_pcl(
-                inp_nf, npoints=npoints, dim=dim,
-                use_rejection=use_rejection
-            )
+                inp_nf, npoints=npoints, dim=dim, use_rejection=use_rejection)
             x = deform.invert(y, iters=30).detach().cuda().float()
 
             weight = compute_invert_weight(

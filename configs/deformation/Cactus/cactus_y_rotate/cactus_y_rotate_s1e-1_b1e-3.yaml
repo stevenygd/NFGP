@@ -27,7 +27,6 @@ trainer:
     use_rejection: True
   # Loss configurations
   loss_h_weight: 100.
-  loss_h_thr: 1e-4
   loss_g:
     weight: 0.
   loss_stretch:
@@ -60,8 +59,5 @@ models:
     out_dim: 3
     hidden_size: 256
     n_blocks: 6
-    relu_scale: 1
     nonlin: elu
     pos_enc_freq: 5
-    use_scale_bias: False # slow training, numerical issues :)
-    use_scale_layer: False  # useless

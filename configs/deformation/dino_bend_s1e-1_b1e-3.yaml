@@ -28,19 +28,16 @@ trainer:
   # Loss configurations
   # Handle loss
   loss_h_weight: 100.
-  loss_h_thr: 1e-4
-  # Stretch loss
-  loss_stretch:
+  # loss_h_thr: 1e-4
+  loss_stretch:  # Stretch loss
     weight: 1e-1
-  # Hessian loss
-  loss_hess:
+  loss_bend:  # Hessian loss
     weight: 1e-3
-  # Gradient norm == 1 loss
-  loss_g:
+  loss_g:  # Gradient norm == 1 loss
     weight: 0.
     num_points: 0
   # Optimization configurations
-  opt_deform:
+  opt:
     type: 'adam'
     lr: 1e-4
     beta1: 0.9

@@ -80,8 +80,10 @@ def deformation(cfg, net):
     else:
         d_decoder = None
 
-    assert hasattr(cfg.trainer, "opt_deform")
-    deform_opt = cfg.trainer.opt_deform
+    if hasattr(cfg.trainer, "opt_deform"):
+        deform_opt = cfg.trainer.opt_deform
+    else:
+        deform_opt = cfg.trainer.opt
     opt_deform_dec, scheduler_deform_dec = get_opt(param_lst, deform_opt)
 
     assert hasattr(cfg.models, "deform_wrapper")
