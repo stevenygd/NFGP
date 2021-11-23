@@ -1,13 +1,13 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/dino/deform_y_rotate-45.npy
+  path: data/bar/deform_twist90.npy
   train:
     length: 100
     batch_size: 1
   val:
-    length: 50
-    batch_size: 10
+    length: 1
+    batch_size: 1
 
 viz:
   log_freq: 1
@@ -47,12 +47,12 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/neural_fields/dino/latest.pt
+    path: pretrained/neural_fields/bar/latest.pt
     type: models.siren_mlp
     dim: 3
     out_dim: 1
     hidden_size: 512
-    n_blocks: 5
+    n_blocks: 2
     z_dim: 1
   deform_wrapper:
     delta_x_add: False

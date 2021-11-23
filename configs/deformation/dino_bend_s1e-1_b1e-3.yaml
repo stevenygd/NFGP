@@ -6,8 +6,8 @@ data:
     length: 100
     batch_size: 1
   val:
-    length: 50
-    batch_size: 10
+    length: 1
+    batch_size: 1
 
 viz:
   log_freq: 1
@@ -28,7 +28,7 @@ trainer:
   # Loss configurations
   # Handle loss
   loss_h_weight: 100.
-  # loss_h_thr: 1e-4
+  loss_h_thr: 1e-4
   loss_stretch:  # Stretch loss
     weight: 1e-1
   loss_bend:  # Hessian loss

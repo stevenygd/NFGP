@@ -1,13 +1,13 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/dino/deform_y_rotate-45.npy
+  path: data/cylinder/deform_translate.npy
   train:
     length: 100
     batch_size: 1
   val:
-    length: 50
-    batch_size: 10
+    length: 1
+    batch_size: 1
 
 viz:
   log_freq: 1
@@ -28,9 +28,9 @@ trainer:
   # Loss configurations
   # Handle loss
   loss_h_weight: 100.
-  # loss_h_thr: 1e-4
+  loss_h_thr: 1e-4
   loss_stretch:  # Stretch loss
-    weight: 0
+    weight: 1e-1
   loss_bend:  # Hessian loss
     weight: 1e-3
   loss_g:  # Gradient norm == 1 loss
@@ -47,7 +47,7 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/neural_fields/dino/latest.pt
+    path: pretrained/neural_fields/cylinder/latest.pt
     type: models.siren_mlp
     dim: 3
     out_dim: 1

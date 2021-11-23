@@ -126,20 +126,27 @@ def get_surf_pcl_langevin_dynamic(
     return out
 
 
-def tangential_projection_matrix(y, x):
+def tangential_projection_matrix(y, x, norm=True, eps=1e-6):
     """
     Compute the tangential projection matrix:
         P = I - n(x)n(x)^T
         where n(x) is the outward surface normal of x
     :param x: (bs, npts, dim) input points
     :param y: (bs, npts, 1) neural_field(x)
+    :param norm: Whether normalize the surface normal vector
+    :param eps: Numerical eps
     :return:
         [normals] (bs, npts, dim) The surface normal
         [normals_proj] (bs, npts, dim, dim) The projector matrices
     """
     bs, npoints, dim = x.size(0), x.size(1), x.size(2)
     grad = gradient(y, x)
-    normals = (grad / grad.norm(dim=-1, keepdim=True)).view(bs, npoints, dim)
+    if norm:
+        normals = (
+                grad / (grad.norm(dim=-1, keepdim=True) + eps)
+        ).view(bs, npoints, dim)
+    else:
+        normals = grad.view(bs, npoints, dim)
     normals_proj = _addr_(
         torch.eye(dim).view(1, 1, dim, dim).expand(bs, npoints, -1, -1).to(y),
         normals, normals, alpha=-1
