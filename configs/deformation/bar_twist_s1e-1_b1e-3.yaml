@@ -39,7 +39,7 @@ trainer:
   # Optimization configurations
   opt:
     type: 'adam'
-    lr: 1e-4
+    lr: 5e-5
     beta1: 0.9
     beta2: 0.999
     momentum: 0.9  # for SGD
