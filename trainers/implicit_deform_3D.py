@@ -58,26 +58,6 @@ class Trainer(BaseTrainer):
             })
         return super().update(data, *args, **kwargs)
 
-    def log_train(self, train_info, train_data, writer=None,
-                  step=None, epoch=None, visualize=False, **kwargs):
-        if writer is None:
-            return
-
-        # Log training information to tensorboard
-        for k, v in train_info.items():
-            if v is None:
-                continue
-            if step is not None:
-                writer.add_scalar(k, v, step)
-            else:
-                assert epoch is not None
-                writer.add_scalar(k, v, epoch)
-
-        if visualize:
-            with torch.no_grad():
-                self.visualize(train_data, train_info,
-                               writer=writer, step=step, epoch=epoch)
-
     def visualize(
             self, train_data, train_info,
             writer=None, step=None, epoch=None, **kwargs):

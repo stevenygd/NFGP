@@ -182,6 +182,9 @@ class Trainer(BaseTrainer):
         else:
             self.sample_cfg = None
 
+        self.show_network_hist = getattr(
+            cfg.trainer, "show_network_hist", False)
+
     def update(self, data, *args, **kwargs):
         self.num_update_step += 1
         handles_ts = data['handles'].cuda().float()
@@ -212,10 +215,14 @@ class Trainer(BaseTrainer):
             # Loss Hessian
             loss_hess_weight=loss_hess_weight,
             n_hess_pts=getattr(self.loss_bend_cfg, "num_points", 5000),
-            hess_use_surf_points=getattr(self.loss_bend_cfg, "use_surf_points", True),
-            hess_invert_sample=getattr(self.loss_bend_cfg, "invert_sample", True),
-            hess_detach_weight=getattr(self.loss_bend_cfg, "detach_weight", False),
-            hess_use_rejection=getattr(self.loss_bend_cfg, "use_rejection", False),
+            hess_use_surf_points=getattr(
+                self.loss_bend_cfg, "use_surf_points", True),
+            hess_invert_sample=getattr(
+                self.loss_bend_cfg, "invert_sample", True),
+            hess_detach_weight=getattr(
+                self.loss_bend_cfg, "detach_weight", True),
+            hess_use_rejection=getattr(
+                self.loss_bend_cfg, "use_rejection", True),
 
             # Loss stretch
             loss_stretch_weight=loss_stretch_weight,
@@ -229,27 +236,44 @@ class Trainer(BaseTrainer):
             stretch_use_weight=getattr(
                 self.loss_stretch_cfg, "use_weight", True),
             stretch_detach_weight=getattr(
-                self.loss_stretch_cfg, "detach_weight", False),
+                self.loss_stretch_cfg, "detach_weight", True),
             stretch_use_rejection=getattr(
-                self.loss_stretch_cfg, "use_rejection", False),
+                self.loss_stretch_cfg, "use_rejection", True),
 
             # Gradient clipping
             grad_clip=self.grad_clip,
         )
         step_res = {
-            ('loss/%s' % k): v for k, v in step_res.items()
+            ('scalar/loss/%s' % k): v for k, v in step_res.items()
         }
-        step_res['loss'] = step_res['loss/loss']
+        step_res['loss'] = step_res['scalar/loss/loss']
         step_res.update({
-            "weight/loss_h_weight": self.loss_h_weight,
-            'weight/loss_hess_weight': loss_hess_weight,
-            'weight/loss_stretch_weight': loss_stretch_weight,
+            "scalar/weight/loss_h_weight": self.loss_h_weight,
+            'scalar/weight/loss_hess_weight': loss_hess_weight,
+            'scalar/weight/loss_stretch_weight': loss_stretch_weight,
         })
         return step_res
 
     def log_train(self, train_info, train_data, writer=None,
                   step=None, epoch=None, visualize=False, **kwargs):
-        raise NotImplementedError
+        if writer is None:
+            return
+        writer_step = step if step is not None else epoch
+
+        # Log training information to tensorboard
+        train_info = {k: (v.cpu() if not isinstance(v, float) else v)
+                      for k, v in train_info.items()}
+        for k, v in train_info.items():
+            ktype = k.split("/")[0]
+            kstr = "/".join(k.split("/")[1:])
+            if ktype == 'scalar':
+                writer.add_scalar(kstr, v, writer_step)
+
+        if self.show_network_hist:
+            for name, p in self.decoder.named_parameters():
+                writer.add_histogram("dec/%s" % name, p, writer_step)
+            for name, p in self.original_decoder.named_parameters():
+                writer.add_histogram("orig_dec/%s" % name, p, writer_step)
 
     def validate(self, test_loader, epoch, *args, **kwargs):
         # TODO: compute mesh and compute the manifold harmonics to
@@ -286,4 +310,4 @@ class Trainer(BaseTrainer):
             self.scheduler_dec.step(epoch=epoch)
             if writer is not None:
                 writer.add_scalar(
-                    'train/opt_dec_lr', self.scheduler_dec.get_lr()[0], epoch)
+                    'lr/opt_dec_lr_sch', self.scheduler_dec.get_lr()[0], epoch)

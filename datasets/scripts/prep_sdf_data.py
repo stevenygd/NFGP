@@ -20,6 +20,10 @@ def get_args():
                         help='Number of point samples near surface.')
     parser.add_argument('--nearsurface_sigma', type=float, default=0.1,
                         help='STD for the Gaussian noise added near surface.')
+    parser.add_argument('--save_uniform_data',
+                        default=False, action='store_true')
+    parser.add_argument('--save_nearsurface_data',
+                        default=False, action='store_true')
     return parser.parse_args()
 
 
@@ -78,13 +82,14 @@ if __name__ == '__main__':
     e = time.time()
     print("Duration", e - s)
 
-    sdf_dataset = {
-        'points': uniform_points,
-        'sdf': uniform_sdf,
-        "mesh": mesh
-    }
-    np.save(out_path_uniform, sdf_dataset)
-    print("Uniform samples saved to :", out_path_uniform)
+    if args.save_uniform_data:
+        sdf_dataset = {
+            'points': uniform_points,
+            'sdf': uniform_sdf,
+            "mesh": mesh
+        }
+        np.save(out_path_uniform, sdf_dataset)
+        print("Uniform samples saved to :", out_path_uniform)
 
     print("Computing SDF for the near surface sampled points.")
     print("\t", "num_points:", args.num_nearsurface_points,
@@ -98,13 +103,14 @@ if __name__ == '__main__':
     e = time.time()
     print("Duration", e - s)
 
-    sdf_dataset = {
-        'points': near_surface_points,
-        'sdf': near_surface_sdf,
-        "mesh": mesh
-    }
-    np.save(out_path_nearsurface, sdf_dataset)
-    print("Nearsurface samples saved to :", out_path_nearsurface)
+    if args.save_nearsurface_data:
+        sdf_dataset = {
+            'points': near_surface_points,
+            'sdf': near_surface_sdf,
+            "mesh": mesh
+        }
+        np.save(out_path_nearsurface, sdf_dataset)
+        print("Nearsurface samples saved to :", out_path_nearsurface)
 
     print("All points")
     points = np.concatenate([
