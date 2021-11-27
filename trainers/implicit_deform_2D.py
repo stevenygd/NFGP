@@ -34,14 +34,14 @@ class Trainer(BaseTrainer):
                 (train_data['targets'] + 1) * float(res) * 0.5
         ).detach().cpu().numpy().reshape(-1, 2)
         orig_img = imf2img(
-            lambda x: self.original_decoder(x, None), res=res
+            lambda x: self.original_net(x, None), res=res
         ).reshape(res, res)
         img = imf2img(
-            lambda x: self.decoder(x, None), res=res).reshape(res, res)
+            lambda x: self.net(x, None), res=res).reshape(res, res)
 
         qres = getattr(self.vis_cfg, "qres", 15)
         orig_loc = make_2d_grid(qres).view(qres * qres, 2).detach().numpy()
-        dfm= self.decoder(
+        dfm= self.net(
             torch.from_numpy(orig_loc).cuda().view(1, -1, 2).float(),
             None, return_delta=True
         )[0].detach().cpu().numpy().reshape(qres * qres, 2)
@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
         plt.tight_layout()
         axl = fig_l.add_subplot(111)
         dfm = imf2img(
-            lambda x: self.decoder(x, None, return_delta=True)[0], res=res)
+            lambda x: self.net(x, None, return_delta=True)[0], res=res)
         dfm_norm_img = np.linalg.norm(
             dfm.reshape(res, res, 2), axis=-1).reshape(res, res)
         axl.contourf(dfm_norm_img)
@@ -109,7 +109,7 @@ class Trainer(BaseTrainer):
         n_pts_smp = getattr(self.vis_cfg, "n_pts_smp", 1000)
         print("Sampling forward!")
         x_forward = get_surf_pcl(
-            lambda x: self.decoder(x, None), npoints=n_pts_smp, dim=2
+            lambda x: self.net(x, None), npoints=n_pts_smp, dim=2
         ).view(-1, 2).detach().cpu().numpy()
         fig_xfwd = plt.figure(figsize=(figsize, figsize))
         plt.tight_layout()
@@ -125,12 +125,12 @@ class Trainer(BaseTrainer):
 
         print("Sampling!")
         x_orig = get_surf_pcl(
-            lambda x: self.original_decoder(x, None),
+            lambda x: self.original_net(x, None),
             npoints=n_pts_smp, dim=2).view(-1, 2)
-        if hasattr(self.decoder, "deform") and x_orig.size(0) > 0 and \
-                hasattr(self.decoder.deform, "invert"):
+        if hasattr(self.net, "deform") and x_orig.size(0) > 0 and \
+                hasattr(self.net.deform, "invert"):
             with torch.no_grad():
-                x_invert = self.decoder.deform.invert(
+                x_invert = self.net.deform.invert(
                     x_orig.view(1, -1, 2), iters=30)
                 x_invert = x_invert.detach().cpu().numpy().reshape(-1, 2)
 
@@ -164,11 +164,11 @@ class Trainer(BaseTrainer):
         #       see if the high frequencies signals are dimed/suppressed
         val_res = getattr(self.cfg.trainer, "val_res", 128)
         _, orig_stats = imf2img(
-            lambda x: self.original_decoder(x, None), res=val_res,
+            lambda x: self.original_net(x, None), res=val_res,
             return_stats=True, verbose=True
         )
         _, net_stats = imf2img(
-            lambda x: self.decoder(x, None), res=val_res,
+            lambda x: self.net(x, None), res=val_res,
             return_stats=True, verbose=True
         )
 

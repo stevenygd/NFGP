@@ -21,11 +21,11 @@ class Trainer(BaseTrainer):
 
         # The networks
         if original_decoder is None:
-            sn_lib = importlib.import_module(cfg.models.decoder.type)
-            self.original_decoder = sn_lib.Net(cfg, cfg.models.decoder)
+            sn_lib = importlib.import_module(cfg.models.net.type)
+            self.original_decoder = sn_lib.Net(cfg, cfg.models.net)
             self.original_decoder.cuda()
             self.original_decoder.load_state_dict(
-                torch.load(cfg.models.decoder.path)['net'])
+                torch.load(cfg.models.net.path)['net'])
             print("Original Decoder:")
             print(self.original_decoder)
         else:

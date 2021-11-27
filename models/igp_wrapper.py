@@ -37,7 +37,7 @@ def distillation(cfg, net, reload=True):
     if hasattr(cfg.models, "distill_decoder"):
         distill_decoder = cfg.models.distill_decoder
     else:
-        distill_decoder = cfg.models.decoder
+        distill_decoder = cfg.models.net
     dec_lib = importlib.import_module(distill_decoder.type)
     decoder = dec_lib.Net(cfg, distill_decoder)
     decoder.cuda()

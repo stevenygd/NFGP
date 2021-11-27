@@ -20,7 +20,7 @@ class Trainer(BaseTrainer):
         self.res = int(getattr(self.cfg.trainer, "mc_res", 256))
         self.thr = float(getattr(self.cfg.trainer, "mc_thr", 0.))
         self.original_mesh, self.original_mesh_stats = imf2mesh(
-            lambda x: self.original_decoder(x),
+            lambda x: self.original_net(x),
             res=self.res, threshold=self.thr,
             normalize=True, norm_type='res', return_stats=True
         )
@@ -36,16 +36,16 @@ class Trainer(BaseTrainer):
         if self.presmp_npoints is not None:
             uniform_pcl_orig = self.original_mesh.sample(self.presmp_npoints)
             with torch.no_grad():
-                x_invert_uniform = self.decoder.deform.invert(
+                x_invert_uniform = self.net.deform.invert(
                     torch.from_numpy(uniform_pcl_orig).float().cuda().view(-1, 3),
                     iters=30
                 ).view(1, -1, 3).cuda().float()
 
             weights = compute_invert_weight(
                 x_invert_uniform,
-                inp_nf=self.original_decoder,
-                out_nf=self.decoder,
-                deform=self.decoder.deform,
+                inp_nf=self.original_net,
+                out_nf=self.net,
+                deform=self.net.deform,
                 surface=True,
             ).cuda().float().view(1, -1)
 
@@ -66,7 +66,7 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             print("Visualize: %s %s" % (step, epoch))
             mesh = imf2mesh(
-                lambda x: self.decoder(x, None), res=res, threshold=thr,
+                lambda x: self.net(x, None), res=res, threshold=thr,
                 normalize=True, norm_type='res'
             )
             if mesh is not None:
@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
 
         with torch.no_grad():
             new_mesh, new_mesh_stats = imf2mesh(
-                lambda x: self.decoder(x),
+                lambda x: self.net(x),
                 res=self.res, threshold=self.thr,
                 normalize=True, norm_type='res', return_stats=True
             )

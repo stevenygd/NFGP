@@ -39,37 +39,48 @@ def dict2namespace(config):
     return namespace
 
 
-def load_imf(log_path, epoch=None, verbose=False, return_trainer=False):
+def load_imf(log_path, config_fpath=None, ckpt_fpath=None,
+             epoch=None, verbose=False,
+             return_trainer=False, return_cfg=False):
     # Load configuration
-    config_fpath = osp.join(log_path, "config", "config.yaml")
+    if config_fpath is None:
+        config_fpath = osp.join(log_path, "config", "config.yaml")
     with open(config_fpath) as f:
         cfg = dict2namespace(yaml.load(f))
     cfg.save_dir = "logs"
 
     # Load pretrained checkpoints
     ep2file = {}
-    last_file, last_ep = None, -1
-    for f in os.listdir(osp.join(log_path, "checkpoints")):
-        ep = int(f.split("_")[1])
-        if verbose:
-            print(ep, f)
-        ep2file[ep] = osp.join(log_path, "checkpoints", f)
-        if ep > last_ep:
-            last_ep = ep
-            last_file = osp.join(log_path, "checkpoints", f)
-    if epoch is not None:
-        last_file = ep2file[epoch]
+    last_file, last_ep = osp.join(log_path, "latest.pt"), -1
+    if ckpt_fpath is not None:
+        last_file = ckpt_fpath
+    else:
+        ckpt_path = osp.join(log_path, "checkpoints")
+        if osp.isdir(ckpt_path):
+            for f in os.listdir(ckpt_path):
+                if not f.endswith(".pt"):
+                    continue
+                ep = int(f.split("_")[1])
+                if verbose:
+                    print(ep, f)
+                ep2file[ep] = osp.join(ckpt_path, f)
+                if ep > last_ep:
+                    last_ep = ep
+                    last_file = osp.join(ckpt_path, f)
+            if epoch is not None:
+                last_file = ep2file[epoch]
     print(last_file)
+
     trainer_lib = importlib.import_module(cfg.trainer.type)
     trainer = trainer_lib.Trainer(cfg, None)
     trainer.resume(last_file)
 
     if return_trainer:
-        return trainer
+        return trainer, cfg
     else:
-        imf = trainer.decoder
+        imf = trainer.net
         del trainer
-        return imf
+        return imf, cfg
 
 
 def parse_hparams(hparam_lst):

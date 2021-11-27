@@ -122,27 +122,28 @@ class Trainer(BaseTrainer):
         set_random_seed(getattr(self.cfg.trainer, "seed", 666))
 
         # The networks
+        # TODO: add recursive loading of trainers.
         if original_decoder is None:
             sn_lib = importlib.import_module(cfg.models.decoder.type)
-            self.original_decoder = sn_lib.Net(cfg, cfg.models.decoder)
-            self.original_decoder.cuda()
-            self.original_decoder.load_state_dict(
+            self.original_net = sn_lib.Net(cfg, cfg.models.decoder)
+            self.original_net.cuda()
+            self.original_net.load_state_dict(
                 torch.load(cfg.models.decoder.path)['net'])
             print("Original Decoder:")
-            print(self.original_decoder)
+            print(self.original_net)
         else:
-            self.original_decoder = original_decoder
+            self.original_net = original_decoder
 
         # Get the wrapper for the operation
         self.wrapper_type = getattr(
             cfg.trainer, "wrapper_type", "distillation")
         if self.wrapper_type in ['distillation']:
-            self.decoder, self.opt_dec, self.scheduler_dec = distillation(
-                cfg, self.original_decoder,
+            self.net, self.opt, self.sch = distillation(
+                cfg, self.original_net,
                 reload=getattr(self.cfg.trainer, "reload_decoder", True))
         elif self.wrapper_type in ['deformation']:
-            self.decoder, self.opt_dec, self.scheduler_dec = deformation(
-                cfg, self.original_decoder)
+            self.net, self.opt, self.sch = deformation(
+                cfg, self.original_net)
         else:
             raise ValueError("wrapper_type:", self.wrapper_type)
 
@@ -201,7 +202,7 @@ class Trainer(BaseTrainer):
         loss_stretch_weight = float(
             getattr(self.loss_stretch_cfg, "weight", 0))
         step_res = deform_step(
-            self.decoder, self.opt_dec, self.original_decoder,
+            self.net, self.opt, self.original_net,
             handles_ts, targets_ts, dim=self.dim,
             x=x_ts, weights=w_ts,
             sample_cfg=self.sample_cfg,
@@ -270,9 +271,9 @@ class Trainer(BaseTrainer):
                 writer.add_scalar(kstr, v, writer_step)
 
         if self.show_network_hist:
-            for name, p in self.decoder.named_parameters():
+            for name, p in self.net.named_parameters():
                 writer.add_histogram("dec/%s" % name, p, writer_step)
-            for name, p in self.original_decoder.named_parameters():
+            for name, p in self.original_net.named_parameters():
                 writer.add_histogram("orig_dec/%s" % name, p, writer_step)
 
     def validate(self, test_loader, epoch, *args, **kwargs):
@@ -282,9 +283,9 @@ class Trainer(BaseTrainer):
 
     def save(self, epoch=None, step=None, appendix=None, **kwargs):
         d = {
-            'dec': self.original_decoder.state_dict(),
-            'net_opt_dec': self.opt_dec.state_dict(),
-            'next_dec': self.decoder.state_dict(),
+            'dec': self.original_net.state_dict(),
+            'net_opt_dec': self.opt.state_dict(),
+            'next_dec': self.net.state_dict(),
             'epoch': epoch,
             'step': step
         }
@@ -296,18 +297,18 @@ class Trainer(BaseTrainer):
 
     def resume(self, path, strict=True, **kwargs):
         ckpt = torch.load(path)
-        self.original_decoder.load_state_dict(ckpt['dec'], strict=strict)
-        self.decoder.load_state_dict(ckpt['next_dec'], strict=strict)
-        self.opt_dec.load_state_dict(ckpt['net_opt_dec'])
+        self.original_net.load_state_dict(ckpt['dec'], strict=strict)
+        self.net.load_state_dict(ckpt['next_dec'], strict=strict)
+        self.opt.load_state_dict(ckpt['net_opt_dec'])
         start_epoch = ckpt['epoch']
         return start_epoch
 
     def multi_gpu_wrapper(self, wrapper):
-        self.decoder = wrapper(self.decoder)
+        self.net = wrapper(self.net)
 
     def epoch_end(self, epoch, writer=None, **kwargs):
-        if self.scheduler_dec is not None:
-            self.scheduler_dec.step(epoch=epoch)
+        if self.sch is not None:
+            self.sch.step(epoch=epoch)
             if writer is not None:
                 writer.add_scalar(
-                    'lr/opt_dec_lr_sch', self.scheduler_dec.get_lr()[0], epoch)
+                    'lr/opt_dec_lr_sch', self.sch.get_lr()[0], epoch)
