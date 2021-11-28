@@ -31,8 +31,8 @@ trainer:
   loss_h_thr: 1e-4
   loss_stretch:  # Stretch loss
     weight: 1e-1
-  loss_bend:  # Hessian loss
-    weight: 1e-3
+  loss_bend:  # bending loss
+    weight: 1e-5
   loss_g:  # Gradient norm == 1 loss
     weight: 0.
     num_points: 0
