@@ -47,7 +47,7 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/neural_fields/cylinder/latest.pt
+    path: pretrained/neural_fields/cactus/latest.pt
     type: models.siren_mlp
     dim: 3
     out_dim: 1
