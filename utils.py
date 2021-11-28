@@ -29,6 +29,8 @@ class AverageMeter(object):
 
 
 def dict2namespace(config):
+    if isinstance(config, argparse.Namespace):
+        return config
     namespace = argparse.Namespace()
     for key, value in config.items():
         if isinstance(value, dict):
