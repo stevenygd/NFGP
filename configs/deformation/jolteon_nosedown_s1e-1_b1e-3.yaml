@@ -1,19 +1,19 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/Cactus/deform_y_rotate45.npy
+  path: data/jolteon/deform_nosedown.npy
   train:
     length: 100
     batch_size: 1
   val:
-    length: 50
-    batch_size: 10
+    length: 1
+    batch_size: 1
 
 viz:
   log_freq: 1
   viz_freq: 100
   save_freq: 10
-  val_freq: 10
+  val_freq: 1
 
 trainer:
   type: trainers.implicit_deform_3D
@@ -23,18 +23,21 @@ trainer:
   show_network_hist: False
   sample_cfg:
     num_points: 5000
-    detach_weight: False
+    detach_weight: True
     use_rejection: True
   # Loss configurations
+  # Handle loss
   loss_h_weight: 100.
-  loss_g:
-    weight: 0.
-  loss_stretch:
+  loss_h_thr: 1e-4
+  loss_stretch:  # Stretch loss
     weight: 1e-1
-  loss_hess:
+  loss_bend:  # Hessian loss
     weight: 1e-3
+  loss_g:  # Gradient norm == 1 loss
+    weight: 0.
+    num_points: 0
   # Optimization configurations
-  opt_deform:
+  opt:
     type: 'adam'
     lr: 1e-4
     beta1: 0.9
@@ -44,8 +47,8 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/Cactus_sdfgtr_siren_1e-5_2021-May-03-09-08-10/checkpoints/epoch_9_iters_100000.pt
-    type: models.decoders.siren_mlp
+    path: pretrained/neural_fields/jolteon/latest.pt
+    type: models.siren_mlp
     dim: 3
     out_dim: 1
     hidden_size: 512
@@ -54,7 +57,7 @@ models:
   deform_wrapper:
     delta_x_add: False
   deform_decoder:
-    type: models.decoders.invert_res_relu_mlp
+    type: models.inv_res
     dim: 3
     out_dim: 3
     hidden_size: 256

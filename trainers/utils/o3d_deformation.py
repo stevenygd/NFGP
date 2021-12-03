@@ -66,11 +66,13 @@ def deform_mesh_o3d(imf, handles, targets, normalize=True, res=256,
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Debug) as cm:
         if smoothed_alpha > 0:
+            print("Smoothing alphas:", smoothed_alpha, "Use Smoothed Energy")
             mesh_deformed = o3d_mesh0.deform_as_rigid_as_possible(
                 constraint_ids, constraint_pos, max_iter=steps,
                 smoothed_alpha=smoothed_alpha,
                 energy=o3d.geometry.DeformAsRigidAsPossibleEnergy.Smoothed)
         else:
+            print("Smoothing alphas:", smoothed_alpha, "Use Spokes Energy")
             mesh_deformed = o3d_mesh0.deform_as_rigid_as_possible(
                 constraint_ids, constraint_pos, max_iter=steps,
                 smoothed_alpha=0,
