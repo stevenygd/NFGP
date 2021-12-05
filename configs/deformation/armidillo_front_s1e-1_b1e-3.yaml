@@ -54,8 +54,6 @@ models:
     hidden_size: 512
     n_blocks: 5
     z_dim: 1
-  deform_wrapper:
-    delta_x_add: False
   deform_decoder:
     type: models.inv_res
     dim: 3

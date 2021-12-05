@@ -14,6 +14,7 @@ There are three types of wrappers we provided:
 Note that one can potentially combine multiple wrappers together. In this
 repository, we will only provide function for the individual wrappers.
 """
+import argparse
 import torch
 import importlib
 import torch.nn as nn
@@ -86,9 +87,9 @@ def deformation(cfg, net):
         deform_opt = cfg.trainer.opt
     opt_deform_dec, scheduler_deform_dec = get_opt(param_lst, deform_opt)
 
-    assert hasattr(cfg.models, "deform_wrapper")
     out = DeformationWrapper(
-        net, cfg.models.deform_wrapper, d_decoder, None)
+        net, getattr(cfg.models, "deform_wrapper", argparse.Namespace()),
+        d_decoder, None)
     return out, opt_deform_dec, scheduler_deform_dec
 
 
@@ -136,8 +137,6 @@ class DeformationWrapper(nn.Module):
         self.correct = correct
         self.nonlin_x = getattr(cfg, "nonlin_x", None)
         self.nonlin_s = getattr(cfg, "nonlin_s", None)
-        self.delta_x_add = getattr(cfg, "delta_x_add", True)
-        assert not self.delta_x_add
         self.use_delta_x = deform is not None
         self.use_delta_s = correct is not None
 

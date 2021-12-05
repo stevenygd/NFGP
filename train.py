@@ -39,19 +39,20 @@ def get_args():
     config = dict2namespace(config)
     config, hparam_str = update_cfg_hparam_lst(config, args.hparams)
 
-    #  Create log_name
-    cfg_file_name = os.path.splitext(os.path.basename(args.config))[0]
-    run_time = time.strftime('%Y-%b-%d-%H-%M-%S')
-    post_fix = hparam_str + run_time
-
     # Currently save dir and log_dir are the same
-    config.log_name = "logs/%s_%s" % (cfg_file_name, post_fix)
-    config.save_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
-    config.log_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
+    if not hasattr(config, "log_dir"):
+        #  Create log_name
+        cfg_file_name = os.path.splitext(os.path.basename(args.config))[0]
+        run_time = time.strftime('%Y-%b-%d-%H-%M-%S')
+        post_fix = hparam_str + run_time
 
-    os.makedirs(osp.join(config.log_dir, 'config'))
-    with open(osp.join(config.log_dir, "config", "config.yaml"), "w") as outf:
-        yaml.dump(config, outf)
+        config.log_name = "logs/%s_%s" % (cfg_file_name, post_fix)
+        config.save_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
+        config.log_dir = "logs/%s_%s" % (cfg_file_name, post_fix)
+
+        os.makedirs(osp.join(config.log_dir, 'config'))
+        with open(osp.join(config.log_dir, "config", "config.yaml"), "w") as outf:
+            yaml.dump(config, outf)
     return args, config
 
 

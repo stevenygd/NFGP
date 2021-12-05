@@ -19,8 +19,9 @@ def imf2mesh(imf, res=256, threshold=0.0, batch_size = 10000, verbose=True,
         xs[..., np.newaxis],
         zs[..., np.newaxis]
     ], axis=-1).astype(np.float)
-    grid = (grid / float(res) - 0.5) * 2 * bound
+    grid = (grid / float(res - 1) - 0.5) * 2 * bound
     grid = grid.reshape(-1, 3)
+    # Grid will be [-1, 1] * bound
 
     dists_lst = []
     pbar = range(0, grid.shape[0], batch_size)
@@ -44,6 +45,8 @@ def imf2mesh(imf, res=256, threshold=0.0, batch_size = 10000, verbose=True,
     try:
         vert, face, _, _ = skimage.measure.marching_cubes(
             field, level=threshold)
+        print(vert.max(), vert.min())
+        # Vertices will be [0, res - 1]
 
         if normalize:
             if norm_type == 'norm':
@@ -52,7 +55,7 @@ def imf2mesh(imf, res=256, threshold=0.0, batch_size = 10000, verbose=True,
                 length = np.linalg.norm(vert_c, axis=-1).max()
                 vert = vert_c / length
             elif norm_type == 'res':
-                vert = (vert * 2 - res) / float(res) * bound
+                vert = (vert / float(res - 1) - 0.5) * 2 * bound
             else:
                 raise ValueError
         new_mesh = trimesh.Trimesh(vertices=vert, faces=face)

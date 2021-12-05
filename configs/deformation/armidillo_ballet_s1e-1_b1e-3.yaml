@@ -1,7 +1,7 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/jolteon/deform_nosedown_legsapart.npy
+  path: data/armadillo/deform_ballet.npy
   train:
     length: 100
     batch_size: 1
@@ -47,17 +47,18 @@ trainer:
 
 models:
   decoder:
-    path: pretrained/neural_fields/jolteon/latest.pt
+    path: pretrained/neural_fields/armadillo/latest.pt
     type: models.siren_mlp
     dim: 3
     out_dim: 1
     hidden_size: 512
     n_blocks: 5
+    z_dim: 1
   deform_decoder:
     type: models.inv_res
     dim: 3
     out_dim: 3
-    hidden_size: 512
+    hidden_size: 256
     n_blocks: 6
     nonlin: elu
     pos_enc_freq: 5

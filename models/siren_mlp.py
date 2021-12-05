@@ -37,7 +37,6 @@ class Net(nn.Module):
     """ Decoder conditioned by adding.
 
     Example configuration:
-        z_dim: 128
         hidden_size: 256
         n_blocks: 5
         out_dim: 3  # we are outputting the gradient

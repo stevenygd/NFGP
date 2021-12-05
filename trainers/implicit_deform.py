@@ -1,15 +1,16 @@
 import os
 import torch
 import importlib
+import os.path as osp
 from argparse import Namespace
 import torch.nn.functional as F
 from trainers.base_trainer import BaseTrainer
 from trainers.utils.utils import set_random_seed
+from trainers.utils.igp_utils import sample_points
+from trainers.losses.eikonal_loss import loss_eikonal
 from models.igp_wrapper import distillation, deformation
 from trainers.losses.implicit_thin_shell_losses import \
     stretch_loss, bending_loss
-from trainers.losses.eikonal_loss import loss_eikonal
-from trainers.utils.igp_utils import sample_points
 
 
 def deform_step(
@@ -148,10 +149,10 @@ class Trainer(BaseTrainer):
             raise ValueError("wrapper_type:", self.wrapper_type)
 
         # Prepare save directory
-        os.makedirs(os.path.join(cfg.save_dir, "images"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "checkpoints"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "val"), exist_ok=True)
-        os.makedirs(os.path.join(cfg.save_dir, "vis"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "images"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "checkpoints"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "val"), exist_ok=True)
+        os.makedirs(osp.join(cfg.save_dir, "vis"), exist_ok=True)
 
         # Set-up counter
         self.num_update_step = 0
@@ -292,8 +293,8 @@ class Trainer(BaseTrainer):
         if appendix is not None:
             d.update(appendix)
         save_name = "epoch_%s_iters_%s.pt" % (epoch, step)
-        path = os.path.join(self.cfg.save_dir, "checkpoints", save_name)
-        torch.save(d, path)
+        torch.save(d, osp.join(self.cfg.save_dir, "checkpoints", save_name))
+        torch.save(d, osp.join(self.cfg.save_dir, "latest.pt"))
 
     def resume(self, path, strict=True, **kwargs):
         ckpt = torch.load(path)

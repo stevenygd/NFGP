@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from trainers.utils.diff_ops import laplace
-from trainers.utils.igp_utils import get_surf_pcl, sample_points_for_loss
+from trainers.utils.igp_utils import get_surf_pcl, sample_points
 
 
 def loss_boundary(gtr, net, npoints=1000, dim=3, x=None, use_surf_points=False):
@@ -73,7 +73,7 @@ def loss_lap(
     :return:
     """
     if x is None:
-        x, weights = sample_points_for_loss(
+        x, weights = sample_points(
             npoints, dim=dim, use_surf_points=use_surf_points,
             gtr=gtr, net=net, deform=deform, invert_sampling=invert_sampling,
             return_weight=True

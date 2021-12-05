@@ -48,7 +48,7 @@ def load_imf(log_path, config_fpath=None, ckpt_fpath=None,
     if config_fpath is None:
         config_fpath = osp.join(log_path, "config", "config.yaml")
     with open(config_fpath) as f:
-        cfg = dict2namespace(yaml.load(f))
+        cfg = dict2namespace(yaml.load(f, Loader=yaml.Loader))
     cfg.save_dir = "logs"
 
     # Load pretrained checkpoints
