@@ -8,7 +8,7 @@
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" 
                                integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-        <title>PointFlow</title>
+        <title>NFGP</title>
 
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111714927-1"></script>
@@ -49,12 +49,13 @@
                 </div>
             </div>
 
-			<div class='row justify-content-center'  style="position: relative; width: 100%;height: 0;padding-bottom: 33%; margin:0">
-                <img 
-                    class="img-fluid rounded mx-auto d-block" 
-                    src="assets/teaser_sm.gif" alt="airplane" 
-                    style="position:absolute; width:100%; height:100%; top:0px; left:0px;" 
-                    srcset="assets/teaser.gif 1536w"
+			<div class='row justify-content-center'
+                 style="position: relative; width: 100%; height:100%; padding-bottom: 30%; margin-top:32px">
+                <img
+                    class="img-fluid rounded mx-auto d-block"
+                    src="assets/teaser.png" alt="Geometry processing with neural fields can be done with this pipeline."
+                    style="position:absolute; width:100%; top:0px; left:0px;"
+                    srcset="assets/teaser.png 1536w"
                     sizes="(min-width: 768px) 1536px, 100vw"
                 >
 			</div>
@@ -138,45 +139,67 @@
             <hr>
             <div class='row text-center'>
                 <div class='col'>
-                    <p class='h2'>Brief Introduction to the Method</p>
+                    <p class='h2'>Introduction</p>
+                </div>
+            </div>
+
+            <div class='row mt-3'>
+                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-3'>
+                    <p class="text-break">
+                        This paper advocate using neural fields for geometry processing tasks.
+                        Neural fields are neural networks that maps spatial coordinates to signals (e.g. a sign distance field).
+                        Our goal is to perform geometry processing tasks directly on neural fields without extracting meshes.
+                    </p>
+                </div>
+                <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/GPwithNF.png" class="img-fluid" alt="goal: GP with NF without meshing">
                 </div>
             </div>
 
             <div class='row mt-3'>
                 <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
-                    <img src="assets/pcl_is_a_sample.gif" class="img-fluid" alt="architecture">
+                    <img src="assets/Prior.png" class="img-fluid" alt="architecture">
                 </div>
-                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-5'>
+                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-3'>
                     <p class="text-break">
-                        Each shape can be viewed as a distribution of 3D points.
-                        In such distribution, points on the shape have higher probability and are more likely to be sampled.
-                        A point cloud can be viewed as a set of points sampled from such distribution.
+                        Geometry processing is an under-constrainted problem because the user specification is usually sparse.
+                        There might exist multiple valid solution to the same input shape and user specification.
+                        As a result, we need to encode a prior to select the most reasonable outputs.
+                        In this paper, we will show how to encode <em>physics inspired priors</em> using neural fields.
                     </p>
                 </div>
             </div>
-
-            <div class='row mt-3'>
-                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-5'>
-                    <p class="text-break">
-                    We use two continuous normalizing flows (CNFs) to model the distribution of shapes, while each shape is a distribution of 3D points.
-                    The latent CNF transforms a vector sampled from the shape prior to a latent shape vector.
-                    The point CNF transforms 3D points sampled from the point prior to a point cloud conditioned on a shape vector.
-                    </p>
-                </div>
-                <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
-                    <img src="assets/inference-architecture.gif" class="img-fluid" alt="architecture">
-                </div>
-            </div>
-
         </div>
 
-        <!-- Results, transformation -->
+        <!-- Results, Smoothing-->
+        <!--
         <div>
             <hr>
             <div class='row text-center'>
                 <div class='col'>
                     <p class='h2'>Smoothing and Sharpening</p>
                 </div>
+
+                <div class='row mt-3'>
+                    <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
+                        <img src="assets/SmoothAndSharpen.png" class="img-fluid" alt="architecture">
+                    </div>
+                    <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-3'>
+                        <p class="text-break">
+                            Geometry processing is an under-constrainted problem because the user specification is usually sparse.
+                            There might exist multiple valid solution to the same input shape and user specification.
+                            As a result, we need to encode a prior to select the most reasonable outputs.
+                            In this paper, we will show how to encode <em>physics inspired priors</em> using neural fields.
+                        </p>
+                    </div>
+                </div>
+
+                <div class='col'>
+                    <img src="assets/smooth-and-sharpen-results.png"
+                         class="img-fluid rounded mx-auto d-block"
+                         alt="Smoothing">
+                </div>
+
             </div>
             <div class='row'>
                 <div class='col'>
@@ -184,7 +207,7 @@
                          alt="filtering">
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <div>
             <hr>
@@ -193,9 +216,81 @@
                     <p class='h2'>Deformation</p>
                 </div>
             </div>
-            <div class='row'>
+
+            <div class='row mt-3'>
+                <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/deformation-task.png" class="img-fluid" alt="architecture">
+                </div>
+                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-3'>
+                    <p class="text-break">
+                        The goal of this task is to deform the input shape in a way that both fulfills user specs and resembles natural deformation.
+                        User will specify a set of points as <em>handles</em> (i.e. the blue points).
+                        The user can either move the handle or keep it unchanged.
+                        Natural deformations are those that can happen in real world objects.
+                    </p>
+                </div>
+            </div>
+
+            <div class='row mt-3'>
+                <div class='col-md-6 col-sm-6 col-xs-12 align-middle mt-3'>
+                    <p class="text-break">
+                        One type of natural deformation is elastic deformation, which assume the material has some resistence to bending and stretching.
+                        We develop training objectives to prior our model to learn elastic deformation.
+                    </p>
+                </div>
+                <div class='col-md-3 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/stretching.png" class="img-fluid" alt="architecture">
+                </div>
+                <div class='col-md-3 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/bending.png" class="img-fluid" alt="architecture">
+                </div>
+            </div>
+
+            <div class='row mt-3 text-center'>
                 <div class='col'>
-                    <img src="assets/deformatoin.gif" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
+                    <p class="text-break">
+                        Following are the results for deformation.
+                        (A) Showing <span style="color:red">handles</span> and <span style="color:blue">targets</span> in the original shapes;
+                        (B) Using ARAP directly on mesh extracted from the input neural field using marching cube;
+                        (C) Our results.
+                    </p>
+                </div>
+            </div>
+            <div class="row mt-1">
+                <div class='col'>
+                    <img src="assets/deform-1.png" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class='col'>
+                    <img src="assets/deform-3.png" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
+                </div>
+            </div>
+
+            <div class='row mt-3 text-center'>
+                <div class='col'>
+                    <p class="text-break">
+                        Our model (i.e. C) can optimize for multiple handles (e.g. both hands and foot):
+                    </p>
+                </div>
+            </div>
+            <div class="row mt-1">
+                <div class='col'>
+                    <img src="assets/deform-2.png" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
+                </div>
+            </div>
+
+
+            <div class='row mt-3 text-center'>
+                <div class='col'>
+                    <p class="text-break">
+                        Our model (i.e. C) tends to create less volume distortion as we can see in the zoom-in region:
+                    </p>
+                </div>
+            </div>
+            <div class="row mt-1">
+                <div class='col'>
+                    <img src="assets/deform-4.png" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
                 </div>
             </div>
         </div>
