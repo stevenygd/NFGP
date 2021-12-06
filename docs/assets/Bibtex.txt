@@ -1,0 +1,6 @@
+@inproceedings{yang2021geometry,
+  title={Geometry Processing with Neural Fields},
+  author={Yang, Guandao and Belongie, Serge and Hariharan, Bharath and Koltun, Vladlen},
+  booktitle={Thirty-Fifth Conference on Neural Information Processing Systems},
+  year={2021}
+}

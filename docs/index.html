@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" 
+                               integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <title>PointFlow</title>
+
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111714927-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'UA-111714927-1');
+        </script>
+    </head>
+    <body class="container" style="max-width:780px">
+
+        <!-- Title -->
+        <div>
+            <div class='row mt-5 mb-3'>
+                <div class='col text-center'>
+                    <p class="h2 font-weight-normal">Geometry Processing with Neural Fields</p>
+                </div>
+            </div>
+
+            <!-- authors -->
+            <div class='row text-center h6 font-weight-bold pl-4 pr-4 mb-4'>
+                <a class="col-md-3 col-xs-6" href="http://www.guandaoyang.com"><span>Guandao Yang</span></a>
+                <a class="col-md-3 col-xs-6" href="http://blogs.cornell.edu/techfaculty/serge-belongie/"><span>Serge Belongie</span></a>
+                <a class="col-md-3 col-xs-6" href="http://home.bharathh.info/"><span>Bharath Hariharan</span></a>
+                <a class="col-md-3 col-xs-6" href="http://vladlen.info/"><span>Vladlen Koltun</span></a>
+            </div>
+
+            <!-- affiliations -->
+            <div class='row mt-1 mt-2' >
+                <div class='col text-center'>
+                    <p class="h6 font-weight-light">
+                    <a class="ml-4" href="https://www.cornell.edu/"><span>Cornell University</span></a>
+                    <a class="mr-4 ml-4" href="https://tech.cornell.edu/"><span>University of Copenhagen</span></a>
+                    <a class="mr-4 ml-4" href="https://www.intel.com/"><span>Intel</span></a>
+                    </p>
+                </div>
+            </div>
+
+			<div class='row justify-content-center'  style="position: relative; width: 100%;height: 0;padding-bottom: 33%; margin:0">
+                <img 
+                    class="img-fluid rounded mx-auto d-block" 
+                    src="assets/teaser_sm.gif" alt="airplane" 
+                    style="position:absolute; width:100%; height:100%; top:0px; left:0px;" 
+                    srcset="assets/teaser.gif 1536w"
+                    sizes="(min-width: 768px) 1536px, 100vw"
+                >
+			</div>
+        </div>
+
+        <!-- Paper section -->
+        <div>
+            <hr>
+            <div class='row'>
+                <div class='col-md-3 col-sm-3 col-xs-12 text-center col-sm-3'>
+                    <div class="row mt-4">
+                        <a href="https://papers.nips.cc/paper/2021/file/bd686fd640be98efaae0091fa301e613-Paper.pdf"
+                           style="max-width:200px; margin-left:auto; margin-right:auto">
+                            <img src="assets/paper.png" alt="paper-snapshot" class="img-thumbnail"
+                                 width="80%" style="box-shadow: 10px 10px 5px grey;">
+                        </a>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col">
+                            <a class="h5" href="https://papers.nips.cc/paper/2021/file/bd686fd640be98efaae0091fa301e613-Paper.pdf"
+                               style="margin-right:10px">
+                                <span>[Paper]</span>
+                            </a>
+                            <a class="h5" href="https://github.com/stevenygd/NFGP"
+                               style="margin-right:10px">
+                                <span>[Code]</span>
+                            </a>
+                            <a class="h5" href="assets/Bibtex.txt" target="_blank">
+                                <span>[Bibtex]</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-md-9 col-sm-9 col-xs-12'>
+                    <p class='h4 font-weight-bold '>Abstract</p>
+                    <p style='line-height:1;'>
+                        Most existing geometry processing algorithms use meshes as the default shape
+                        representation. Manipulating meshes, however, requires one to maintain high
+                        quality in the surface discretization. For example, changing the topology of
+                        a mesh usually requires additional procedures such as remeshing. This paper
+                        instead proposes the use of <i>neural fields</i> for geometry processing.
+                        Neural fields can compactly store complicated shapes without spatial
+                        discretization. Moreover, neural fields are infinitely differentiable, which
+                        allows them to be optimized for objectives that involve higher-order
+                        derivatives. This raises the question: <i>can geometry processing be done
+                        entirely using neural fields?</i> We introduce loss functions and
+                        architectures to show that some of the most challenging geometry processing
+                        tasks, such as deformation and filtering, can be done with neural fields.
+                        Experimental results show that our methods are on par with the
+                        well-established mesh-based methods without committing to a particular
+                        surface discretization.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video -->
+        <div>
+            <hr>
+
+            <div class='row text-center'>
+                <div class='col'>
+                    <p class='h2 mr-3'>Video</p>
+                </div>
+            </div>
+
+
+            <div class='row mt-3 text-center center-block' style=" margin-left:auto; margin-right:auto; max-width:560px">
+                <div class='col ml-1 mr-1' style="position: relative; width: 100%;height: 0;padding-bottom: 56%;">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/y6LKzQ6ACTw"
+                            title="Geometry Processing with Neural Fields" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Architecture, explaination -->
+        <div>
+            <hr>
+            <div class='row text-center'>
+                <div class='col'>
+                    <p class='h2'>Brief Introduction to the Method</p>
+                </div>
+            </div>
+
+            <div class='row mt-3'>
+                <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/pcl_is_a_sample.gif" class="img-fluid" alt="architecture">
+                </div>
+                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-5'>
+                    <p class="text-break">
+                        Each shape can be viewed as a distribution of 3D points.
+                        In such distribution, points on the shape have higher probability and are more likely to be sampled.
+                        A point cloud can be viewed as a set of points sampled from such distribution.
+                    </p>
+                </div>
+            </div>
+
+            <div class='row mt-3'>
+                <div class='col-md-5 col-sm-5 col-xs-12 align-middle mt-5'>
+                    <p class="text-break">
+                    We use two continuous normalizing flows (CNFs) to model the distribution of shapes, while each shape is a distribution of 3D points.
+                    The latent CNF transforms a vector sampled from the shape prior to a latent shape vector.
+                    The point CNF transforms 3D points sampled from the point prior to a point cloud conditioned on a shape vector.
+                    </p>
+                </div>
+                <div class='col-md-7 col-sm-7 col-xs-12 mt-3'>
+                    <img src="assets/inference-architecture.gif" class="img-fluid" alt="architecture">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Results, transformation -->
+        <div>
+            <hr>
+            <div class='row text-center'>
+                <div class='col'>
+                    <p class='h2'>Smoothing and Sharpening</p>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col'>
+                    <img src="assets/filtering.gif" class="img-fluid rounded mx-auto d-block"
+                         alt="filtering">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <hr>
+            <div class='row text-center'>
+                <div class='col'>
+                    <p class='h2'>Deformation</p>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col'>
+                    <img src="assets/deformatoin.gif" class="img-fluid rounded mx-auto d-block" alt="flow-airplane-4">
+                </div>
+            </div>
+        </div>
+
+        <!-- Ack -->
+        <div>
+            <hr>
+
+            <div class='row mb-5 text-center'>
+                <div class='col'>
+                    <p class='h2'>Acknowledgements</p>
+                    <p>Guandao’s PhD was supported in part by a research gift from Magic Leap and a
+                        donation from NVIDIA. We want to thank Wenqi Xian, Professor Steve Marschner
+                        , and members of Intel Labs for providing insightful feedback for this
+                        project.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" 
+                integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" 
+                integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" 
+                integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    </body>
+</html>
