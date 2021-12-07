@@ -1,7 +1,7 @@
 data:
   type: datasets.deform_handles_datasets
   num_workers: 4
-  path: data/jolteon/deform_nosedown.npy
+  path: data/jolteon/deform_jump.npy
   train:
     length: 100
     batch_size: 1
@@ -59,6 +59,6 @@ models:
     dim: 3
     out_dim: 3
     hidden_size: 256
-    n_blocks: 1
+    n_blocks: 6
     nonlin: elu
     pos_enc_freq: 5
