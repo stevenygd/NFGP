@@ -21,6 +21,8 @@ class Trainer(BaseTrainer):
 
         # The networks
         if original_decoder is None:
+            if not hasattr(cfg.models, "net"):
+                cfg.models.net = cfg.models.decoder
             sn_lib = importlib.import_module(cfg.models.net.type)
             self.original_decoder = sn_lib.Net(cfg, cfg.models.net)
             self.original_decoder.cuda()
@@ -127,7 +129,6 @@ class Trainer(BaseTrainer):
                 npoints=lap_loss_num_points,
                 beta=self.beta,
                 masking_thr=lap_loss_threshold,
-                use_surf_points=False, invert_sampling=False,
             )
             loss_lap_scaling = loss_lap_scaling * lap_loss_weight
         else:

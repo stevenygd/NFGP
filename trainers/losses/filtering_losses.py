@@ -20,14 +20,11 @@ def loss_boundary(gtr, net, npoints=1000, dim=3, x=None, use_surf_points=False):
     :return:
     """
     if x is None:
-        if use_surf_points:
-            assert net is not None
-            x = get_surf_pcl(
-                gtr, npoints=npoints, dim=dim,
-                steps=5, noise_sigma=1e-3, filtered=False, sigma_decay=1.
-            ).detach().cuda().float()
-        else:
-            x = torch.rand(1, npoints, dim).cuda().float() * 2 - 1
+        x, _ = sample_points(
+            npoints, dim=dim, sample_surf_points=use_surf_points,
+            invert_sampling=False, out_nf=gtr, deform=None
+        )
+        x = x.detach().cuda().float()
         bs = 1
         x = x.view(bs, npoints, dim)
     else:
@@ -51,7 +48,7 @@ def loss_boundary(gtr, net, npoints=1000, dim=3, x=None, use_surf_points=False):
 
 def loss_lap(
         gtr, net, deform=None,
-        x=None, npoints=1000, dim=3, use_surf_points=True, invert_sampling=True,
+        x=None, npoints=1000, dim=3,
         beta=1., masking_thr=10, return_mask=False, use_weights=False, weights=1
 ):
     """
@@ -74,9 +71,8 @@ def loss_lap(
     """
     if x is None:
         x, weights = sample_points(
-            npoints, dim=dim, use_surf_points=use_surf_points,
-            gtr=gtr, net=net, deform=deform, invert_sampling=invert_sampling,
-            return_weight=True
+            npoints, dim=dim, sample_surf_points=False,
+            out_nf=gtr, inp_nf=None, deform=None, invert_sampling=False,
         )
         bs, npoints = x.size(0), x.size(1)
     else:
