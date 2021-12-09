@@ -61,6 +61,12 @@ wget https://geometry-processing-with-neural-fields.s3.us-east-2.amazonaws.com/d
 unzip deform_data.zip
 ```
 
+We also provide pretrained neural fields for convenience:
+```bash
+wget https://geometry-processing-with-neural-fields.s3.us-east-2.amazonaws.com/nf_pretrained.zip
+unzip nf_pretrained.zip
+```
+
 #### Create SDF Samples 
 
 Following command creates SDF ground truth samples for obtaining the Neural Fields that approximates the SDF of the
@@ -91,11 +97,9 @@ python train.py configs/recon/create_neural_fields.yaml --hparams data.path=<you
 ```
 You can also create your own config following the examples in folder `configs/recon`.
 
-
 #### Create Deformation Handles 
 
 Please see `notebooks/deformation-handles-*.ipynb` for examples.
-
 
 ## Smoothing and Sharpening 
 
@@ -127,6 +131,8 @@ python train.py configs/deformation/jolteon_nosedown_s1e-1_b1e-3.yaml
 To change the amount of bending or stretching resistent, 
 you can change the value of `trainer.loss_stretch.weight` and `trainer.loss_bend,weught` by
 adding `--hparams trainer.loss_stretch.weight=<new_weight>` or `--hparams trainer.loss_bend.weight=<new_weight>`
+
+To visualize the results, you can use the notebook `notebooks/visualize-deformation.ipynb`.
 
 ## Citation 
 
