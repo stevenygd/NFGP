@@ -1,6 +1,6 @@
 # Geometry Processing with Neural Fields
 
-Pytorch implementation for the **NeurIPS 2021** paper:
+Pytorch implementation for the **NeurIPS 2021** paper [(project page)](https://www.guandaoyang.com/NFGP):
 
 [Geometry Processing with Neural Fields](https://openreview.net/pdf?id=JG-SlCAx5_K)
 
@@ -8,6 +8,9 @@ Pytorch implementation for the **NeurIPS 2021** paper:
 [Serge Belongie](https://blogs.cornell.edu/techfaculty/serge-belongie/),
 [Bharath Hariharan](http://home.bharathh.info/),
 [Vladlen Koltun](http://vladlen.info/)
+
+![Teaser](docs/assets/teaser.png)
+
 
 
 ## Introduction
@@ -46,7 +49,17 @@ If you want to run experiment for your own shape, you need to prepare data in th
 
 #### Download Dataset
 
-Available soon.
+You can find the dataset in the following Google drive folder: [Google Drive](https://drive.google.com/drive/folders/1Hbl566qaJrbfDokPo5kgCv0djOutJB0R?usp=sharing). 
+Alternatively, you can also download data using the following command:
+```bash
+# Download data to train Neural Fields
+wget https://geometry-processing-with-neural-fields.s3.us-east-2.amazonaws.com/nf_data.zip
+unzip nf_data.zip
+
+# Download the deformation Data
+wget https://geometry-processing-with-neural-fields.s3.us-east-2.amazonaws.com/deform_data.zipA
+unzip deform_data.zip
+```
 
 #### Create SDF Samples 
 
@@ -81,7 +94,8 @@ You can also create your own config following the examples in folder `configs/re
 
 #### Create Deformation Handles 
 
-Available soon.
+Please see `notebooks/deformation-handles-*.ipynb` for examples.
+
 
 ## Smoothing and Sharpening 
 
@@ -102,4 +116,31 @@ You can change the value of `beta` by adding `--hparams trainer.beta=<yourbeta>`
 To run it on a different shape, you need to change the `models.decoder` to load the appropriate neural fields.
 
 ## Deformation
-Available soon.
+
+To run the deformation experiments, you can use the following configurations:
+```bash
+# Jolteon
+python train.py configs/deformation/jolteon_jump_s1e-1_b1e-3.yaml
+python train.py configs/deformation/jolteon_nosedown_s1e-1_b1e-3.yaml
+```
+
+To change the amount of bending or stretching resistent, 
+you can change the value of `trainer.loss_stretch.weight` and `trainer.loss_bend,weught` by
+adding `--hparams trainer.loss_stretch.weight=<new_weight>` or `--hparams trainer.loss_bend.weight=<new_weight>`
+
+## Citation 
+
+If you find our paper or code useful, please cite us:
+```
+@inproceedings{yang2021geometry,
+  title={Geometry Processing with Neural Fields},
+  author={Yang, Guandao and Belongie, Serge and Hariharan, Bharath and Koltun, Vladlen},
+  booktitle={Thirty-Fifth Conference on Neural Information Processing Systems},
+  year={2021}
+}
+```
+
+## Acknowledgement
+Guandao’s PhD was supported in part by a research gift from Magic Leap and
+a donation from NVIDIA. We want to thank Wenqi Xian, Professor Steve Marschner, and members
+of Intel Labs for providing insightful feedback for this project.
