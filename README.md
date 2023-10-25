@@ -49,7 +49,7 @@ If you want to run experiment for your own shape, you need to prepare data in th
 
 #### Download Dataset
 
-You can find the dataset in the following Google drive folder: [Google Drive](https://drive.google.com/drive/folders/1Hbl566qaJrbfDokPo5kgCv0djOutJB0R?usp=sharing). 
+You can find the dataset in the following Google drive folder: [Google Drive](https://drive.google.com/drive/folders/1oHS1jpVwUJ7mbKKdmfHsfXsDwS0kEZtW?usp=sharing). 
 Alternatively, you can also download data using the following command:
 ```bash
 # Download data to train Neural Fields
